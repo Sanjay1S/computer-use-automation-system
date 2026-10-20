@@ -143,37 +143,51 @@ def _l002_sensitive_literals(capability: Capability) -> list[Finding]:
 
 def _l003_commit_retries(capability: Capability) -> list[Finding]:
     """Retrying a commit can move money twice."""
-    return [
-        Finding(
-            "L003",
-            "error",
-            f"commit step has retry.max_attempts={step.retry.max_attempts}; a commit "
-            "is never retried",
-            f"steps.{step.id}",
-        )
-        for step in capability.steps
-        if step.effect == "commit" and step.retry.max_attempts > 0
-    ] + [
-        Finding(
-            "L003",
-            "error",
-            f"commit step treats an unmatched outcome as "
-            f"{step.on_no_match.do!r}; after a commit, anything that is not a "
-            "definite outcome is unknown and goes to a human",
-            f"steps.{step.id}",
-        )
-        for step in capability.steps
-        if step.effect == "commit"
-        and step.on_no_match is not None
-        and step.on_no_match.do in ("succeed", "continue")
-    ]
+    return (
+        [
+            Finding(
+                "L003",
+                "error",
+                f"commit step has retry.max_attempts={step.retry.max_attempts}; a commit "
+                "is never retried",
+                f"steps.{step.id}",
+            )
+            for step in capability.steps
+            if step.effect == "commit" and step.retry.max_attempts > 0
+        ]
+        + [
+            Finding(
+                "L003",
+                "error",
+                f"commit step treats an unmatched outcome as "
+                f"{step.on_no_match.do!r}; after a commit, anything that is not a "
+                "definite outcome is unknown and goes to a human",
+                f"steps.{step.id}",
+            )
+            for step in capability.steps
+            if step.effect == "commit"
+            and step.on_no_match is not None
+            and step.on_no_match.do in ("succeed", "continue")
+        ]
+        + [
+            Finding(
+                "L003",
+                "error",
+                "commit step has no expectations, so nothing would show whether it committed",
+                f"steps.{step.id}",
+            )
+            for step in capability.steps
+            if step.effect == "commit" and not step.expect
+        ]
+    )
 
 
-def _l004_param_binding(capability: Capability) -> list[Finding]:
-    """Every declared param is used, and every used param is declared."""
-    declared = {i.name for i in capability.inputs}
-    used: set[str] = set()
+def bound_params(capability: Capability) -> dict[str, set[str]]:
+    """The params each part of the artifact uses, keyed by a readable location
+    ("step 's3'", "the success checkpoint"). L004 and replay's preflight share it."""
+    where: dict[str, set[str]] = {}
     for step in capability.steps:
+        used: set[str] = set()
         if isinstance(step.value, ParamValue):
             used.add(step.value.param)
         used |= _params_in_target(step.target)
@@ -183,9 +197,18 @@ def _l004_param_binding(capability: Capability) -> list[Finding]:
             used |= sig.params_used(expectation.when)
         if step.url:
             used |= _template_params(step.url) - {"base_url"}
-    used |= sig.params_used(capability.success.signature)
+        where[f"step {step.id!r}"] = used
+    success = sig.params_used(capability.success.signature)
     if capability.success.negative_control:
-        used |= sig.params_used(capability.success.negative_control)
+        success |= sig.params_used(capability.success.negative_control)
+    where["the success checkpoint"] = success
+    return where
+
+
+def _l004_param_binding(capability: Capability) -> list[Finding]:
+    """Every declared param is used, and every used param is declared."""
+    declared = {i.name for i in capability.inputs}
+    used: set[str] = set().union(*bound_params(capability).values())
 
     findings = [
         Finding("L004", "error", f"input {name!r} is declared but never bound", "inputs")

@@ -135,14 +135,9 @@
             "do": "continue"
           },
           "when": {
-            "all": [
-              {
-                "css": "select#type",
-                "exact": true,
-                "kind": "visible"
-              }
-            ],
-            "kind": "all"
+            "kind": "selected",
+            "param": "account_type",
+            "target": "select#type"
           }
         }
       ],
@@ -190,9 +185,9 @@
             "do": "continue"
           },
           "when": {
-            "css": "select#fromAccountId",
-            "exact": true,
-            "kind": "visible"
+            "kind": "selected",
+            "param": "funding_account_id",
+            "target": "select#fromAccountId"
           }
         }
       ],

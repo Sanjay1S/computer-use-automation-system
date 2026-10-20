@@ -5,9 +5,7 @@ from __future__ import annotations
 import re
 
 import pytest
-import yaml
 from playwright.sync_api import Page
-from pydantic import TypeAdapter
 
 from tests.conftest import REPO, sign_in
 from tests.fixtures.example_capability import example_capability
@@ -15,6 +13,7 @@ from tests.fixtures.site import BASE_URL, PASSWORD, FixtureSite
 from understudy.artifact.schema import Extraction
 from understudy.artifact.signatures import (
     AbsentCondition,
+    AllCondition,
     DialogCondition,
     HttpStatusCondition,
     OptionsLoadedCondition,
@@ -23,6 +22,8 @@ from understudy.artifact.signatures import (
     UrlCondition,
     VisibleCondition,
 )
+from understudy.policy.gate import PolicyGate
+from understudy.profile import load_profile
 from understudy.surface.base import (
     ActionBlocked,
     ActionFailed,
@@ -53,20 +54,11 @@ def open_form(page: Page, surface: WebSurface) -> None:
     page.wait_for_function("document.querySelector('#fromAccountId').options.length > 0")
 
 
-def profile_signature(name: str) -> Signature:
-    profile = yaml.safe_load((REPO / "apps/parabank/profile.yaml").read_text())
-    condition = profile["global_signatures"][name]["condition"]
-    adapter: TypeAdapter[Signature] = TypeAdapter(Signature)
-    return adapter.validate_python(_kinded(condition))
+PROFILE = load_profile(REPO / "apps/parabank/profile.yaml")
 
 
-def _kinded(node: object) -> object:
-    """profile.yaml writes conditions as `{visible: {...}}`; the DSL is `kind`-tagged."""
-    assert isinstance(node, dict) and len(node) == 1
-    ((kind, body),) = node.items()
-    if kind in ("all", "any"):
-        return {"kind": kind, kind: [_kinded(child) for child in body]}
-    return {"kind": kind, **body}
+def global_state(state_id: str) -> Signature:
+    return next(s.when for s in PROFILE.global_states if s.id == state_id)
 
 
 # --- the fixture site behaves like recon found ParaBank ------------------------------
@@ -90,7 +82,7 @@ def test_an_expired_session_rerenders_the_login_form_in_place(
 ) -> None:
     sign_in(page)
     surface.navigate(f"{BASE_URL}/overview.htm")
-    expired = profile_signature("session_expired")
+    expired = global_state("session_expired")
     assert not surface.probe(expired)
 
     page.context.clear_cookies()
@@ -102,8 +94,15 @@ def test_an_expired_session_rerenders_the_login_form_in_place(
 def test_a_bad_account_id_is_a_business_error(page: Page, surface: WebSurface) -> None:
     sign_in(page)
     surface.navigate(f"{BASE_URL}/activity.htm?id=99999")
-    assert surface.probe(profile_signature("business_error_not_found"))
-    assert not surface.probe(profile_signature("app_internal_error"))
+    # F5, recorded under the profile's recon notes: a business answer on this page.
+    not_found = AllCondition(
+        all=[
+            VisibleCondition(role="heading", name="Error!"),
+            VisibleCondition(text_regex=r"Could not find account #\d+"),
+        ]
+    )
+    assert surface.probe(not_found)
+    assert not surface.probe(global_state("app_internal_error"))
 
 
 # --- refs ----------------------------------------------------------------------------
@@ -232,6 +231,53 @@ def test_an_overlay_over_the_target_is_reported_as_blocked(page: Page, surface: 
         surface.act("click", page.get_by_role("link", name="Accounts Overview"), timeout_ms=1_000)
 
 
+def test_a_covered_select_is_refused_too_not_only_a_covered_click(
+    page: Page, surface: WebSurface
+) -> None:
+    """Playwright checks what receives the pointer only for clicks: select_option and
+    fill go straight through a modal. The surface refuses them as well."""
+    open_form(page, surface)
+    page.evaluate(
+        """() => { const d = document.createElement('div'); d.id = 'cover';
+        d.style = 'position:fixed;inset:0;z-index:9999'; document.body.appendChild(d); }"""
+    )
+    with pytest.raises(ActionBlocked, match="div#cover") as raised:
+        surface.act("select", page.locator("select#fromAccountId"), "54321")
+    assert not raised.value.dispatched
+    assert page.locator("select#fromAccountId").input_value() == "12345"
+
+
+def test_a_shadow_root_input_or_one_under_its_own_label_is_not_covered(
+    page: Page, surface: WebSurface
+) -> None:
+    page.set_content(
+        """<div style="position:relative">
+          <input id="email" style="width:200px;height:24px">
+          <label for="email" style="position:absolute;left:0;top:0;width:200px;height:24px">
+            <span>Email</span></label>
+        </div>
+        <my-field></my-field>
+        <script>customElements.define("my-field", class extends HTMLElement {
+          constructor() {
+            super(); this.attachShadow({mode: "open"}).innerHTML = "<input id=inner>";
+          }
+        });</script>"""
+    )
+    surface.act("fill", page.locator("#email"), "a")
+    surface.act("fill", page.locator("my-field #inner"), "b")
+    assert page.locator("#email").input_value() == "a"
+    assert page.locator("my-field #inner").input_value() == "b"
+
+
+def test_an_error_from_the_browser_call_itself_is_marked_dispatched(
+    page: Page, surface: WebSurface
+) -> None:
+    open_form(page, surface)
+    with pytest.raises(ActionFailed) as raised:
+        surface.act("fill", page.get_by_role("link", name="Accounts Overview"), "x", timeout_ms=500)
+    assert raised.value.dispatched
+
+
 # --- probes --------------------------------------------------------------------------
 
 
@@ -311,17 +357,39 @@ def test_http_status_tracks_the_main_frame(page: Page, surface: WebSurface) -> N
     assert surface.probe(HttpStatusCondition(min=400, max=499))
 
 
-def test_a_pending_dialog_blocks_page_reads_until_handled(page: Page, surface: WebSurface) -> None:
+def test_an_unknown_dialog_is_dismissed_at_once_and_blocks_driving_until_acknowledged(
+    page: Page, surface: WebSurface
+) -> None:
+    """A dialog left open freezes every page read, whatever its timeout, so the surface
+    answers it on arrival (dismiss: the non-committal answer) and records it."""
     surface.navigate(f"{BASE_URL}/index.htm")
     page.evaluate("() => setTimeout(() => alert('Your session will expire'), 0)")
     page.wait_for_event("dialog")
+    surface.pause(50)
     assert surface.probe(DialogCondition(message_regex="session will expire"))
     assert surface.pending_dialog == ("alert", "Your session will expire")
-    assert surface.observe().dialog == "alert: Your session will expire"
-    with pytest.raises(DialogBlocking):
-        surface.probe(VisibleCondition(text="Customer Login"))
-    surface.dismiss_dialog()
+    assert surface.observe().dialog == "alert: Your session will expire (dismissed)"
+    # The page is readable (nothing is open), but it may not be driven yet.
     assert surface.probe(VisibleCondition(role="heading", name="Customer Login"))
+    with pytest.raises(DialogBlocking):
+        surface.resolve(example_capability().steps[3].target, {})  # type: ignore[arg-type]
+    assert [str(d) for d in surface.acknowledge_dialogs()] == ["alert: Your session will expire"]
+    assert surface.pending_dialog is None
+    assert not surface.probe(DialogCondition())
+
+
+def test_a_dialog_with_a_rule_gets_that_answer_and_does_not_block(
+    page: Page, site: FixtureSite, gate: PolicyGate
+) -> None:
+    surface = WebSurface(page, gate, mode="replay", dialog_rules=[("^Continue\\?", "accept")])
+    surface.navigate(f"{BASE_URL}/index.htm")
+    answer = page.evaluate("() => new Promise((r) => setTimeout(() => r(confirm('Continue?')), 0))")
+    assert answer is True
+    assert surface.pending_dialog is None  # known: it does not block
+    assert [(d.answer, d.known) for d in surface.dialogs] == [("accept", True)]
+    unknown = page.evaluate("() => new Promise((r) => setTimeout(() => r(confirm('Delete?')), 0))")
+    assert unknown is False
+    assert surface.pending_dialog == ("confirm", "Delete?")
 
 
 # --- regressions from the M3 review ------------------------------------------------------

@@ -5,119 +5,104 @@ description: >
   Parasoft ParaBank demo banking app (legacy Java EE / Tomcat, server-rendered,
   jsessionid in URLs, AJAX-loaded option lists, no test ids).
 
-# Verified 2026-10-20 (M1 recon) against:
-#   local:  http://localhost:8089/parabank  (Docker image parasoft/parabank, this
-#           machine remaps the container's internal 8080 to host port 8089 because
-#           8080 was already bound on this host; the image's own listener is 8080)
+# Verified 2026-10-20 (M1 recon, M3 page source) against:
+#   local:  http://localhost:8089/parabank  (Docker image parasoft/parabank; this
+#           machine maps the container's 8080 to host port 8089, plan §18.1 F4)
 #   public: https://parabank.parasoft.com/parabank
 
 login:
+  session: parabank.customer
   route: /index.htm
-  username_field: { by: css, value: "input[name='username']" }
-  password_field: { by: css, value: "input[name='password']" }
-  submit: { by: css, value: "input[value='Log In']" }
+  username_env: PARABANK_USERNAME
+  password_env: PARABANK_PASSWORD
+  username_field:
+    description: The login form's username box
+    fingerprint: { tag: input, input_type: text }
+    locators:
+      - by: css
+        value: "input[name='username']"
+        stability: medium
+        note: "Recon: the box has no accessible name (plain <p> label), so the name attribute is the handle."
+  password_field:
+    description: The login form's password box
+    fingerprint: { tag: input, input_type: password }
+    locators:
+      - by: css
+        value: "input[name='password']"
+        stability: medium
+        note: "Same as the username box: unnamed in the accessibility tree."
+  submit:
+    description: The login form's Log In button
+    fingerprint: { role: button, name: Log In }
+    locators:
+      - by: role
+        value: { role: button, name: Log In, exact: true }
+        stability: high
+        note: "Recon 01_index: button \"Log In\"."
+      - by: css
+        value: "input[value='Log In']"
+        stability: medium
+        note: "The value attribute is the label."
+  # Recon 02_overview: every signed-in page has the left-panel "Log Out" link.
+  signed_in: { kind: visible, role: link, name: Log Out }
+  # M4: confirmed on local ParaBank with a wrong password (read-only check).
+  rejected: { kind: visible, text: The username and password could not be verified. }
+
+global_states:
+  # Recon F3: a protected page re-renders the login form in place at the same URL.
+  # There is no redirect, so only the DOM shows that the session is gone.
+  - id: session_expired
+    description: The session has expired (the login form is showing)
+    when: { kind: visible, role: heading, name: Customer Login }
+    handling: reauthenticate
+  - id: server_error
+    description: The page load failed with a server error (5xx)
+    when: { kind: http_status, min: 500, max: 599 }
+    handling: transient
+  # M3, F8: the page script shows this panel when an XHR fails. It is in the DOM,
+  # hidden, on every load, so only its visibility counts.
+  - id: app_internal_error
+    description: The app is showing its internal-error panel
+    when: { kind: visible, text: An internal error has occurred and has been logged. }
+    handling: transient
+
+interstitials: []
+
+screenshot_masks:
+  - "#leftPanel p.smallText" # "Welcome <customer name>"
+  - "select#fromAccountId" # the customer's account numbers
+  - "#newAccountId"
+  - "#accountTable"
+
+recon:
   demo_credentials_verified:
-    local: { username: john, password: demo, works: true }
-    public: { username: john, password: demo, works: true }
-
-global_signatures:
-  session_expired:
-    # Confirmed on local: clearing cookies and revisiting a protected route
-    # (overview.htm) does NOT redirect the URL. The same path re-renders the
-    # "Customer Login" form in place.
-    condition:
-      all:
-        - visible: { role: heading, name: "Customer Login" }
-    note: >
-      URL-unchanged signature, not a redirect. Any global-state check must poll
-      the DOM, not rely on navigation/URL change.
-
+    local: { username: john, works: true }
+    public: { username: john, works: true }
   business_error_not_found:
-    # Confirmed on local via activity.htm?id=<bogus>: this is a *business
-    # outcome* signature (bad id), not the plan's assumed generic
-    # "internal error" text.
-    condition:
-      all:
-        - visible: { role: heading, name: "Error!" }
-        - visible: { text_regex: "Could not find account #\\d+" }
+    route: /activity.htm?id=<bogus>
+    shows: 'heading "Error!" and "Could not find account #<id>"'
     note: >
-      Distinct from app_internal_error below. Plan §3 assumed this route would
-      show "An internal error has occurred and has been logged." — it does not;
-      that generic text was not observed and needs a different trigger (verify
-      in M2/M4 if/when needed for the taxonomy table).
-
-  app_internal_error:
-    # Confirmed in M3 from openaccount.htm's source: the text is in the hidden
-    # #openAccountError panel, shown by the page script when an XHR fails
-    # (createAccount or the accounts list). Present in the DOM on every load, so
-    # it must be matched as *visible*, never by presence.
-    condition:
-      all:
-        - visible: { text: "An internal error has occurred and has been logged." }
-    note: "Shown on XHR failure; not triggered by a bad id (that is business_error_not_found)."
-
-routes:
-  open_account: /openaccount.htm
-  activity: /activity.htm
-  overview: /overview.htm
-  admin: /admin.htm # deny — can re-initialize the shared DB
-
-open_account_page:
-  heading: "Open New Account"
-  type_select:
-    by: css
-    value: "select#type"
-    options_verified: [CHECKING, SAVINGS]
-    # M3: option values are 0 and 1; CHECKING/SAVINGS are the labels. Select by label.
-    option_values_verified: { CHECKING: "0", SAVINGS: "1" }
-  from_account_select:
-    by: css
-    value: "select#fromAccountId"
-    loaded_via: ajax
-    wait_signature: { options_loaded: { min: 1 } }
-    options_verified_local: ["12345", "12456", "12567", "12678", "12789", "12900", "13011", "13122", "13233", "13344", "54321"]
-  submit_button:
-    fingerprint: { role: button, name: "Open New Account" }
-    # M3: an <input type="button">, not a submit. The form has no action; the page
-    # script POSTs services_proxy/bank/createAccount?customerId=&newAccountType=
-    # &fromAccountId= and then shows #openAccountResult or #openAccountError.
-    element_verified: "input[type='button'][value='Open New Account']"
-    commit_request: "POST /services_proxy/bank/createAccount"
-    note: >
-      Confirmed: a nav link with the identical name "Open New Account" also
-      exists (role=link). They share a name and differ only by role — locator
-      synthesis must scope by role, never by name alone.
-  nav_link_same_name:
-    fingerprint: { role: link, name: "Open New Account" }
-  success_signature:
-    condition:
-      all:
-        - visible: { text: "Account Opened!" }
-    note: >
-      Confirmed text on local. M3: the #openAccountResult panel holding it is in the
-      DOM, hidden, before submit, so only visibility distinguishes success.
-  new_account_id:
-    locator: { by: css, value: "#newAccountId" }
-    pattern: "^\\d+$"
-    verified_sample: "13566"
-
-overview_page:
-  heading_label_varies_by_tenant:
-    local: "Account Overview"
-    public: "Accounts Overview"
-    note: >
-      Real per-tenant label drift, confirmed in M1. This is exactly the kind of
-      thing §12 tenant overrides (patches keyed by step id/locator) are for —
-      do not hardcode the singular/plural heading text as a cross-tenant
-      checkpoint condition.
-
-url_conventions:
-  jsessionid_in_path: true
-  jsessionid_pattern: ";jsessionid=[0-9A-F]+"
-  note: "Confirmed on both instances; canonicalization must strip this before templating a URL into an artifact step."
-
-denied_routes:
-  - /admin.htm # can re-initialize the shared DB; never call on any shared/public tenant
-  - /initializeDB.htm
-  - /logout.htm
-  - /updateprofile.htm
+      F5: a bad account id is a business outcome on that page, not the generic
+      internal-error panel. Belongs to a capability's outcomes, not to global states.
+  routes:
+    open_account: /openaccount.htm
+    activity: /activity.htm
+    overview: /overview.htm
+  open_account_page:
+    heading: Open New Account
+    type_select: "select#type, options valued 0/1, labelled CHECKING/SAVINGS (select by label)"
+    from_account_select: "select#fromAccountId, AJAX-loaded from GET services_proxy/bank/customers/<id>/accounts"
+    submit_button: >
+      input[type='button'][value='Open New Account']: a plain button, not a submit. The
+      page script POSTs services_proxy/bank/createAccount and then shows the hidden
+      #openAccountResult or #openAccountError panel. A nav link of the same name exists
+      (role link): locators must separate them by role.
+    success_text: Account Opened!
+    new_account_id: "#newAccountId, pattern ^\\d+$, sample 13566"
+  overview_heading_by_tenant:
+    local: Account Overview
+    public: Accounts Overview
+    note: "F6: per-tenant label drift. Never a cross-tenant checkpoint string."
+  url_conventions:
+    jsessionid_in_path: true
+    jsessionid_pattern: ";jsessionid=[0-9A-F]+"

@@ -47,6 +47,9 @@ class FixtureSite:
     next_id: int = 13566
     accounts_delay_ms: int = 0
     """Page-side delay before the funding list is filled, for readiness tests."""
+    accounts_status: int = 200
+    """Status the accounts list answers with; >= 400 makes the page show its
+    internal-error panel, as ParaBank does when that XHR fails."""
     session_id: str = field(default_factory=lambda: secrets.token_hex(16).upper())
     authenticated: bool = False
     requests: list[tuple[str, str]] = field(default_factory=list)
@@ -67,9 +70,13 @@ class FixtureSite:
         self.requests.append((request.method, path))
         cookie = request.all_headers().get("cookie", "")
         has_cookie = f"JSESSIONID={self.session_id}" in cookie
-        signed_in = self.authenticated and (
-            has_cookie or (url_sid is not None and url_sid.group(1) == self.session_id)
-        )
+        known = has_cookie or (url_sid is not None and url_sid.group(1) == self.session_id)
+        if not known:
+            # As Tomcat does: a request that names no live session gets a new one,
+            # signed out. So clearing cookies really does expire the session.
+            self.session_id = secrets.token_hex(16).upper()
+            self.authenticated = False
+        signed_in = self.authenticated and known
         query = {k: v[0] for k, v in parse_qs(parts.query).items()}
         sid = "" if has_cookie else f";jsessionid={self.session_id}"
         headers = (
@@ -116,6 +123,8 @@ class FixtureSite:
         if name == f"services_proxy/bank/customers/{CUSTOMER_ID}/accounts":
             if not signed_in:
                 return route.fulfill(status=401, body="")
+            if self.accounts_status >= 400:
+                return route.fulfill(status=self.accounts_status, body="")
             return self._json(
                 route, [{"id": int(a), "customerId": int(CUSTOMER_ID)} for a in self.accounts]
             )

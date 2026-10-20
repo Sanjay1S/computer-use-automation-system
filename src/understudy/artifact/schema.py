@@ -226,6 +226,9 @@ class Step(_Model):
             raise ValueError(f"step {self.id}: extract needs an extract spec")
         if self.extract and self.action != "extract":
             raise ValueError(f"step {self.id}: only extract steps carry an extract spec")
+        if self.reentry_point and self.action != "navigate":
+            # Replay restarts here after a recovery, which only works from a fresh page.
+            raise ValueError(f"step {self.id}: a re-entry point must be a navigate step")
         return self
 
     @property

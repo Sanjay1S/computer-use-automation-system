@@ -16,6 +16,10 @@ from understudy.artifact.signatures import Signature
 
 class SurfaceError(Exception):
     code = "surface_error"
+    dispatched = False
+    """Set when the error came from the browser call that delivers the input, so the
+    input may have reached the page. Replay treats a commit that failed this way as
+    having an unknown outcome."""
 
 
 class StaleRef(SurfaceError):

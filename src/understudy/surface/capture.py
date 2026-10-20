@@ -7,7 +7,8 @@ are not used here: they record raw input values and network bodies.
 from __future__ import annotations
 
 import json
-from collections.abc import Sequence
+import re
+from collections.abc import Collection, Sequence
 from pathlib import Path
 from typing import Any, cast
 
@@ -30,14 +31,27 @@ _FIELDS_JS = """
 
 # Values typed into fields live in the `value` property, which cloning drops; the
 # attribute is removed too because servers render prefilled values into it.
+# Masked panels (names, account lists) are emptied in the clone, never in the page:
+# the live page may be the one an operator takes over.
 _SANITIZED_DOM_JS = """
-() => {
+(masks) => {
   const clone = document.documentElement.cloneNode(true);
   clone.querySelectorAll("input").forEach((i) => i.removeAttribute("value"));
   clone.querySelectorAll("textarea").forEach((t) => { t.textContent = ""; });
   clone.querySelectorAll("script").forEach((s) => { s.textContent = ""; });
+  masks.forEach((m) => {
+    try { clone.querySelectorAll(m).forEach((e) => { e.textContent = "[masked]"; }); }
+    catch (error) { /* a selector this frame cannot parse masks nothing here */ }
+  });
   return clone.outerHTML;
 }
+"""
+
+_MASKED_TEXT_JS = """
+(masks) => masks.flatMap((m) => {
+  try { return Array.from(document.querySelectorAll(m)); } catch (error) { return []; }
+}).flatMap((e) => (e.innerText || e.textContent || "").split(/[\\n\\t]+/))
+  .map((t) => t.replace(/\\s+/g, " ").trim()).filter((t) => t.length >= 3)
 """
 
 
@@ -72,11 +86,34 @@ def screenshot(page: Page, path: Path, extra_masks: Sequence[str] = ()) -> Path:
     return path
 
 
-def sanitized_dom(page: Page, redactor: Redactor) -> str:
+def masked_texts(page: Page, masks: Sequence[str]) -> set[str]:
+    """The visible text of the masked panels, line by line, for hiding it in captures
+    that are not HTML (the accessibility snapshot, dialog text)."""
+    texts: set[str] = set()
+    for frame in page.frames:
+        try:
+            texts.update(cast(list[str], frame.evaluate(_MASKED_TEXT_JS, list(masks))))
+        except Exception:
+            continue
+    return texts
+
+
+def mask_snapshot(snapshot: str, texts: Collection[str]) -> str:
+    """Hide the masked panels' text in an accessibility snapshot, where it appears as a
+    line's whole text or a whole quoted name. Whole values only: a panel's "Account"
+    header must not turn every "Account" elsewhere into a mask."""
+    for text in sorted(texts, key=len, reverse=True):
+        escaped = re.escape(text)
+        snapshot = re.sub(rf"(: ){escaped}$", r"\1[masked]", snapshot, flags=re.MULTILINE)
+        snapshot = snapshot.replace(f'"{text}"', '"[masked]"')
+    return snapshot
+
+
+def sanitized_dom(page: Page, redactor: Redactor, masks: Sequence[str] = ()) -> str:
     parts = []
     for index, frame in enumerate(page.frames):
         try:
-            html = cast(str, frame.evaluate(_SANITIZED_DOM_JS))
+            html = cast(str, frame.evaluate(_SANITIZED_DOM_JS, list(masks)))
         except Exception:
             continue
         label = "main frame" if index == 0 else f"frame {index}: {redactor.url(frame.url)}"
@@ -94,31 +131,49 @@ def write_failure_bundle(
     console: Sequence[str],
     events: Sequence[Event],
     extra_masks: Sequence[str] = (),
+    dialog: str | None = None,
 ) -> Path:
-    """Everything needed to diagnose a failed step without re-running it."""
+    """Everything needed to diagnose a failed step without re-running it. The masked
+    panels are blanked in the DOM and their text is hidden everywhere else.
+    `dialog` lists the native dialogs the page showed (already answered)."""
     directory.mkdir(parents=True, exist_ok=True)
+    masked = masked_texts(page, extra_masks) if extra_masks else set()
+    if dialog is not None:
+        for text in sorted(masked, key=len, reverse=True):
+            dialog = dialog.replace(text, "[masked]")
+        (directory / "dialog.txt").write_text(redactor.text(dialog) + "\n", encoding="utf-8")
     try:
         screenshot(page, directory / "screenshot.png", extra_masks)
     except Exception as error:  # the bundle is still worth writing without the picture
         (directory / "screenshot.error.txt").write_text(redactor.text(str(error)) + "\n")
-    (directory / "dom.html").write_text(sanitized_dom(page, redactor), encoding="utf-8")
-    (directory / "aria.txt").write_text(redactor.snapshot(snapshot) + "\n", encoding="utf-8")
+    (directory / "dom.html").write_text(
+        sanitized_dom(page, redactor, extra_masks), encoding="utf-8"
+    )
+    (directory / "aria.txt").write_text(
+        redactor.snapshot(mask_snapshot(snapshot, masked)) + "\n", encoding="utf-8"
+    )
+    _write_common(directory, redactor, page.url, page.title(), reason, console, events)
+    return directory
+
+
+def _write_common(
+    directory: Path,
+    redactor: Redactor,
+    url: str,
+    title: str,
+    reason: str,
+    console: Sequence[str],
+    events: Sequence[Event],
+) -> None:
     (directory / "console.txt").write_text(
         "".join(redactor.text(line) + "\n" for line in console), encoding="utf-8"
     )
     (directory / "events.jsonl").write_text(
         "".join(e.model_dump_json(exclude_none=True) + "\n" for e in events), encoding="utf-8"
     )
-    (directory / "bundle.json").write_text(
-        json.dumps(
-            {
-                "reason": redactor.text(reason),
-                "url": redactor.url(page.url),
-                "title": redactor.text(page.title()),
-            },
-            indent=2,
-        )
-        + "\n",
-        encoding="utf-8",
-    )
-    return directory
+    summary = {
+        "reason": redactor.text(reason),
+        "url": redactor.url(url),
+        "title": redactor.text(title),
+    }
+    (directory / "bundle.json").write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")

@@ -257,3 +257,11 @@ def test_not_round_trips_through_its_alias() -> None:
     )
 
     assert condition.model_dump(by_alias=True)["not"]["path_regex"] == "/x"
+
+
+def test_a_reentry_point_must_load_a_page() -> None:
+    """Replay restarts there after a recovery; only a navigate starts from a fresh page."""
+    step = example_capability().steps[1].model_dump()
+    step["reentry_point"] = True
+    with pytest.raises(ValidationError, match="re-entry point must be a navigate"):
+        Step.model_validate(step)

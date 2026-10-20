@@ -18,6 +18,7 @@ treated as off policy until the next navigation.
 
 from __future__ import annotations
 
+import contextlib
 import re
 from collections.abc import Iterator, Mapping, Sequence
 from contextlib import contextmanager
@@ -82,6 +83,24 @@ _OPTIONS_JS = """
 }))
 """
 
+# The element that would receive a pointer event at the target's centre. Playwright
+# checks this only for clicks; select_option and fill act straight through a modal.
+# Asked of the target's own root, so an element inside a shadow tree is not "covered"
+# by its host; a label for the control (or a child of one) passes its clicks on.
+_COVERED_JS = """
+(e) => {
+  const r = e.getBoundingClientRect();
+  if (!r.width || !r.height) return null;
+  const root = e.getRootNode();
+  const at = typeof root.elementFromPoint === "function" ? root : e.ownerDocument;
+  const top = at.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+  if (!top || top === e || e.contains(top)) return null;
+  const label = top.closest("label");
+  if (label && label.control === e) return null;
+  return top.tagName.toLowerCase() + (top.id ? "#" + top.id : "");
+}
+"""
+
 _PASSWORD_VALUES_JS = """
 () => Array.from(document.querySelectorAll("input[type=password]")).map((i) => i.value)
 """
@@ -101,6 +120,22 @@ _SELECTED_JS = """
 """
 
 
+DialogAnswer = Literal["accept", "dismiss"]
+
+
+@dataclass(frozen=True)
+class DialogSeen:
+    type: str
+    message: str
+    """Raw page text. Redact before writing."""
+    answer: DialogAnswer
+    known: bool
+    """Answered by a rule the caller gave, rather than by the default."""
+
+    def __str__(self) -> str:
+        return f"{self.type}: {self.message}"
+
+
 @dataclass(frozen=True)
 class PolicyViolation:
     url: str
@@ -112,22 +147,41 @@ class PolicyViolation:
 
 
 class WebSurface:
-    def __init__(self, page: Page, gate: PolicyGate, *, mode: Mode, run_id: str = "adhoc") -> None:
+    def __init__(
+        self,
+        page: Page,
+        gate: PolicyGate,
+        *,
+        mode: Mode,
+        run_id: str = "adhoc",
+        dialog_rules: Sequence[tuple[str | None, DialogAnswer]] = (),
+    ) -> None:
         """Install any other route handlers (fixtures, fault injection) before
         constructing this. Playwright runs page routes before context routes, and
         each set last-registered first, so the guard goes on both: on the page it
         runs ahead of every earlier page route, on the context it covers pages the
-        app opens later."""
+        app opens later.
+
+        Native dialogs are answered the moment they open: while one is open every
+        page read blocks, whatever its timeout, so one left open for later would
+        freeze whatever call was in flight. A dialog matching a `dialog_rules` entry
+        (message regex, or None for any) gets that answer; any other is dismissed,
+        the non-committal answer, and then blocks driving the page until someone
+        acknowledges it."""
         self.page = page
         self.gate = gate
         self.mode: Mode = mode
         self.run_id = run_id
         self.refs = RefTable()
-        self._dialogs: list[Dialog] = []
+        self._dialog_rules = [(re.compile(r) if r else None, a) for r, a in dialog_rules]
+        self._dialogs: list[DialogSeen] = []
+        """Answered, not yet acknowledged."""
+        self._dialog_history: list[DialogSeen] = []
         self._console: list[str] = []
         self._violations: list[PolicyViolation] = []
         self._tainted: PolicyViolation | None = None
         self._commit_budget: dict[str, int] | None = None
+        self._commit_requests = 0
         self._last_status: int | None = None
         page.on("dialog", self._on_dialog)
         page.on("console", self._on_console)
@@ -141,23 +195,16 @@ class WebSurface:
 
     def observe(self) -> Observation:
         self._check_tainted()
-        if self._dialogs:
-            dialog = self._dialogs[0]
-            return Observation(
-                url=self.page.url,
-                title="",
-                snapshot="",
-                status=self._last_status,
-                dialog=f"{dialog.type}: {dialog.message}",
-            )
         snapshot = self.refs.rewrite(
             scrub_for_model(self.page.aria_snapshot(mode="ai"), self._password_values())
         )
+        dialog = self._dialogs[0] if self._dialogs else None
         return Observation(
             url=self.page.url,
             title=self.page.title(),
             snapshot=snapshot,
             status=self._last_status,
+            dialog=f"{dialog} ({dialog.answer}ed)" if dialog else None,
         )
 
     def page_text(self) -> str:
@@ -234,7 +281,11 @@ class WebSurface:
         """Acts on the exact element whose facts were checked: the locator is pinned
         to a handle first, so a re-render between resolution and action fails
         instead of landing on whatever now matches. Replay passes the target's
-        fingerprint, which is re-checked here against that same element."""
+        fingerprint, which is re-checked here against that same element.
+
+        An element covered by something else (a modal, an overlay) is refused for
+        every action, not only clicks. An error raised by the browser call itself has
+        `dispatched` set: the input may have reached the page."""
         self._ready()
         try:
             handle = element.element_handle(timeout=timeout_ms)
@@ -254,6 +305,14 @@ class WebSurface:
             key=value if action == "press" else None,
             mode=self.mode,
         )
+        self._enforce(decision, spend=False)
+        try:
+            handle.scroll_into_view_if_needed(timeout=timeout_ms)
+            cover = cast(str | None, handle.evaluate(_COVERED_JS))
+        except PlaywrightError as error:
+            raise _surface_error(error) from None
+        if cover:
+            raise ActionBlocked(f"{cover} covers the target and would receive the input")
         self._enforce(decision)
         try:
             if action == "click":
@@ -269,7 +328,9 @@ class WebSurface:
         except SurfaceError:
             raise
         except PlaywrightError as error:
-            raise _surface_error(error) from None
+            mapped = _surface_error(error)
+            mapped.dispatched = True
+            raise mapped from None
 
     def read(self, element: PwLocator, extraction: Extraction) -> str:
         """The raw string. Parsing and pattern checks belong to the caller."""
@@ -282,6 +343,20 @@ class WebSurface:
             return element.inner_text(timeout=2_000)
         except PlaywrightError as error:
             raise _surface_error(error) from None
+
+    def pause(self, ms: int) -> None:
+        """Wait while the page's events (routes, dialogs, responses) keep being
+        dispatched. A Python sleep would hold them until the next Playwright call."""
+        try:
+            self.page.wait_for_timeout(ms)
+        except PlaywrightError as error:
+            raise _surface_error(error) from None
+
+    @property
+    def commit_requests(self) -> int:
+        """Requests to commit routes let through so far. Evidence for whoever has to
+        decide what a commit with an unknown outcome did."""
+        return self._commit_requests
 
     @contextmanager
     def commit_window(self) -> Iterator[None]:
@@ -306,7 +381,12 @@ class WebSurface:
         self._check_tainted()
         try:
             return self._eval(signature, params or {})
-        except (PlaywrightError, ValueError, re.error) as error:
+        except PlaywrightError as error:
+            mapped = _surface_error(error)
+            if isinstance(mapped, InfraError):
+                raise mapped from None
+            raise ProbeError(str(mapped)) from None
+        except (ValueError, re.error) as error:
             raise ProbeError(str(error).strip().split("\n", 1)[0][:300]) from None
 
     def _eval(self, node: sig.Signature, params: Mapping[str, str]) -> bool:
@@ -326,8 +406,6 @@ class WebSurface:
                 node.message_regex is None or re.search(node.message_regex, d.message)
                 for d in self._dialogs
             )
-        if self._dialogs:
-            raise DialogBlocking("a dialog is open; handle it before reading the page")
         if isinstance(node, sig.VisibleCondition):
             return self._matching(node, params).filter(visible=True).count() > 0
         if isinstance(node, sig.AbsentCondition):
@@ -387,13 +465,34 @@ class WebSurface:
 
     @property
     def pending_dialog(self) -> tuple[str, str] | None:
-        return (self._dialogs[0].type, self._dialogs[0].message) if self._dialogs else None
+        """The first unacknowledged dialog no rule knew, as (type, message)."""
+        unknown = next((d for d in self._dialogs if not d.known), None)
+        return (unknown.type, unknown.message) if unknown else None
 
-    def accept_dialog(self, prompt_text: str | None = None) -> None:
-        self._dialogs.pop(0).accept(prompt_text)
+    @property
+    def dialogs(self) -> list[DialogSeen]:
+        """Answered and not yet acknowledged."""
+        return list(self._dialogs)
 
-    def dismiss_dialog(self) -> None:
-        self._dialogs.pop(0).dismiss()
+    @property
+    def dialog_history(self) -> list[DialogSeen]:
+        """Every dialog the page showed, acknowledged or not."""
+        return list(self._dialog_history)
+
+    def acknowledge_dialogs(
+        self, *, matching: Sequence[str | None] | None = None, known_only: bool = False
+    ) -> list[DialogSeen]:
+        """Mark dialogs as dealt with, so they stop matching probes and blocking.
+        `matching`: only those whose message matches one of these regexes (None: any)."""
+
+        def selected(d: DialogSeen) -> bool:
+            if known_only and not d.known:
+                return False
+            return matching is None or any(r is None or re.search(r, d.message) for r in matching)
+
+        done = [d for d in self._dialogs if selected(d)]
+        self._dialogs = [d for d in self._dialogs if d not in done]
+        return done
 
     # --- evidence ------------------------------------------------------------------
 
@@ -419,7 +518,7 @@ class WebSurface:
         extra_masks: Sequence[str] = (),
     ) -> Path:
         try:
-            snapshot = "" if self._dialogs else self.page.aria_snapshot()
+            snapshot = self.page.aria_snapshot()
         except PlaywrightError as error:
             snapshot = f"(no snapshot: {error})"
         finally:
@@ -433,14 +532,23 @@ class WebSurface:
             console=self._console,
             events=events,
             extra_masks=extra_masks,
+            dialog="\n".join(f"{d} ({d.answer}ed)" for d in self._dialog_history)
+            if self._dialog_history
+            else None,
         )
 
     # --- internals -----------------------------------------------------------------
 
-    def _enforce(self, decision: Decision) -> None:
+    def _enforce(self, decision: Decision, *, spend: bool = True) -> None:
+        """`spend=False` only checks, so a refusal comes before anything touches the page
+        and the commit is spent only once the action is about to be delivered."""
         if decision.verdict == "deny":
             raise PolicyBlocked(decision.reason, decision.rule)
-        if decision.verdict == "require_approval" and not self._spend_commit("actions"):
+        if decision.verdict != "require_approval":
+            return
+        budget = self._commit_budget
+        available = budget is not None and budget["actions"] > 0
+        if not available or (spend and not self._spend_commit("actions")):
             raise PolicyBlocked(
                 "this action commits and no approved commit is left in this window", "commit"
             )
@@ -483,13 +591,16 @@ class WebSurface:
         ref. Retaking the page snapshot restores them (Playwright keeps refs per
         element), so a ref the model holds, or a ref locator mid-action, keeps working.
         Only needed once refs have been handed out."""
-        if self.refs.generation and not self._dialogs:
+        if self.refs.generation:
             self.refs.rewrite(self.page.aria_snapshot(mode="ai"))
 
     def _ready(self) -> None:
         self._check_tainted()
-        if self._dialogs:
-            raise DialogBlocking("a dialog is open; handle it before driving the page")
+        if self.pending_dialog is not None:
+            raise DialogBlocking(
+                "an unexpected dialog appeared (and was dismissed); acknowledge it before "
+                "driving the page"
+            )
 
     def _check_tainted(self) -> None:
         if self._tainted is not None:
@@ -519,14 +630,12 @@ class WebSurface:
 
     def _judge(self, request: Request) -> Decision:
         decision = self.gate.check_url(request.url)
-        if (
-            decision.allowed
-            and self.gate.is_commit_request(request.url)
-            and not self._spend_commit("requests")
-        ):
-            return Decision(
-                "deny", "commit_window", "a commit request outside an approved commit action"
-            )
+        if decision.allowed and self.gate.is_commit_request(request.url):
+            if not self._spend_commit("requests"):
+                return Decision(
+                    "deny", "commit_window", "a commit request outside an approved commit action"
+                )
+            self._commit_requests += 1
         return decision
 
     def _on_request(self, request: Request) -> None:
@@ -562,7 +671,18 @@ class WebSurface:
             return
 
     def _on_dialog(self, dialog: Dialog) -> None:
-        self._dialogs.append(dialog)
+        rule = next(
+            (a for r, a in self._dialog_rules if r is None or r.search(dialog.message)), None
+        )
+        answer: DialogAnswer = rule or "dismiss"
+        with contextlib.suppress(PlaywrightError):  # already answered, or its page is gone
+            if answer == "accept":
+                dialog.accept()
+            else:
+                dialog.dismiss()
+        seen = DialogSeen(dialog.type, dialog.message, answer, rule is not None)
+        self._dialogs.append(seen)
+        self._dialog_history.append(seen)
 
     def _on_console(self, message: ConsoleMessage) -> None:
         if message.type == "error":

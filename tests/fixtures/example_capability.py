@@ -46,6 +46,7 @@ from understudy.artifact.signatures import (
     AllCondition,
     NotCondition,
     OptionsLoadedCondition,
+    SelectedCondition,
     UrlCondition,
     VisibleCondition,
 )
@@ -210,11 +211,9 @@ def _s2_type() -> Step:
         expect=[
             Expectation(
                 description="The dropdown holds the requested type",
-                when=AllCondition(
-                    all=[
-                        VisibleCondition(css="select#type"),
-                    ]
-                ),
+                # Matches the option's label or value: the enum speaks labels
+                # (SAVINGS), the page stores values (1).
+                when=SelectedCondition(target="select#type", param="account_type"),
                 then=Disposition(do="continue"),
             )
         ],
@@ -252,7 +251,7 @@ def _s3_funding() -> Step:
         expect=[
             Expectation(
                 description="The requested funding account is selected",
-                when=VisibleCondition(css="select#fromAccountId"),
+                when=SelectedCondition(target="select#fromAccountId", param="funding_account_id"),
                 then=Disposition(do="continue"),
             )
         ],

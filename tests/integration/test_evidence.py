@@ -167,3 +167,17 @@ def leaks(directory: Path, site: FixtureSite, extra: list[str] | None = None) ->
         if "jsessionid" in text.lower():
             found.append(f"{path.name}: jsessionid")
     return found
+
+
+def test_masked_panel_text_is_hidden_as_whole_values_only() -> None:
+    from understudy.surface.capture import mask_snapshot
+
+    snapshot = (
+        '- paragraph: Welcome John Smith\n- columnheader "Account"\n'
+        '- combobox [ref=e3]\n- link "Open New Account"\n- text: fromAccountId'
+    )
+    masked = mask_snapshot(snapshot, {"Welcome John Smith", "Account"})
+    assert "John Smith" not in masked
+    assert '- columnheader "[masked]"' in masked
+    assert '- link "Open New Account"' in masked  # a whole value elsewhere is untouched
+    assert "fromAccountId" in masked

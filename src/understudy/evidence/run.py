@@ -75,8 +75,10 @@ class RunContext:
         redactor: Redactor,
         run_id: str | None = None,
         meta: Mapping[str, Any] | None = None,
+        verbatim: Collection[str] = (),
         recent: int = 50,
     ) -> None:
+        """`verbatim` names identifier keys in `meta` to keep unredacted (see write_json)."""
         stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
         # Letters only: a hex suffix is all digits 6% of the time, and the redactor's
         # digit backstop then masks the run id as if it were an account number.
@@ -92,7 +94,7 @@ class RunContext:
         self.write_json(
             "run.json",
             {**dict(meta or {}), "run_id": self.run_id, "kind": kind, "started_at": stamp},
-            verbatim=("run_id", "kind", "started_at"),
+            verbatim=("run_id", "kind", "started_at", *verbatim),
         )
 
     def know(self, values: Mapping[str, Sensitivity]) -> None:
