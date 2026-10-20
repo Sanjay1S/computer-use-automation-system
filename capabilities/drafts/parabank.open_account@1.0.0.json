@@ -1,0 +1,411 @@
+{
+  "app": {
+    "compatible_versions": [
+      "3.*"
+    ],
+    "entry_route": "/openaccount.htm",
+    "surface": "web",
+    "vendor_app": "parabank"
+  },
+  "description": "Opens a new CHECKING or SAVINGS account for the signed-in ParaBank customer, funded by transferring the minimum opening deposit from one of their existing accounts, and returns the new account's id. The funding account must belong to the signed-in customer.",
+  "id": "parabank.open_account",
+  "inputs": [
+    {
+      "description": "The kind of account to open.",
+      "enum": [
+        "CHECKING",
+        "SAVINGS"
+      ],
+      "example": "SAVINGS",
+      "name": "account_type",
+      "required": true,
+      "sensitivity": "public",
+      "type": "enum"
+    },
+    {
+      "description": "The existing account the opening deposit comes from. Must be one of the signed-in customer's own accounts.",
+      "example": "12345",
+      "name": "funding_account_id",
+      "pattern": "^\\d+$",
+      "required": true,
+      "sensitivity": "financial_id",
+      "type": "string"
+    }
+  ],
+  "lifecycle": {
+    "status": "draft"
+  },
+  "outcomes": [
+    {
+      "code": "funding_account_not_found",
+      "description": "The funding account list loaded, but it does not contain the requested account: it is not one of this customer's accounts. Nothing was committed.",
+      "detected_by": "s3_funding_account",
+      "terminal": true
+    }
+  ],
+  "outputs": [
+    {
+      "description": "The id of the account that was opened.",
+      "name": "new_account_id",
+      "pattern": "^\\d+$",
+      "sensitivity": "financial_id",
+      "source_step": "s5_read_new_id",
+      "type": "string"
+    }
+  ],
+  "provenance": {
+    "authored": "hand_written",
+    "discovery_run_id": "handwritten-m2",
+    "goal_template": "Open a new {account_type} account funded from {funding_account_id}",
+    "human_steps": [],
+    "locator_stats": {
+      "locators": 5,
+      "targets": 4,
+      "verified_unique": 5
+    },
+    "models_served": [],
+    "recorded_against": "parabank-local"
+  },
+  "recovery": {
+    "allowed": [
+      "retry_transient",
+      "reauthenticate",
+      "dismiss_interstitial"
+    ],
+    "budget": 3
+  },
+  "requires": {
+    "secrets": [],
+    "session": "parabank.customer"
+  },
+  "schema_version": "understudy.capability/v1",
+  "side_effects": {
+    "approval": "per_invocation",
+    "class": "commit",
+    "description": "Creates a real account and moves the minimum opening deposit out of the funding account. Running it twice opens two accounts.",
+    "idempotent": false
+  },
+  "steps": [
+    {
+      "action": "navigate",
+      "effect": "read",
+      "expect": [
+        {
+          "description": "The form is showing",
+          "then": {
+            "do": "continue"
+          },
+          "when": {
+            "all": [
+              {
+                "kind": "url",
+                "path_regex": "/openaccount\\.htm$"
+              },
+              {
+                "exact": true,
+                "kind": "visible",
+                "name": "Open New Account",
+                "role": "heading"
+              }
+            ],
+            "kind": "all"
+          }
+        }
+      ],
+      "id": "s1_open_form",
+      "intent": "Go to the account opening form",
+      "reentry_point": true,
+      "retry": {
+        "backoff_ms": [
+          500,
+          1000
+        ],
+        "max_attempts": 2
+      },
+      "timeout_ms": 15000,
+      "url": "{base_url}/openaccount.htm"
+    },
+    {
+      "action": "select",
+      "effect": "input",
+      "expect": [
+        {
+          "description": "The dropdown holds the requested type",
+          "then": {
+            "do": "continue"
+          },
+          "when": {
+            "all": [
+              {
+                "css": "select#type",
+                "exact": true,
+                "kind": "visible"
+              }
+            ],
+            "kind": "all"
+          }
+        }
+      ],
+      "id": "s2_account_type",
+      "intent": "Choose the account type",
+      "reentry_point": false,
+      "retry": {
+        "backoff_ms": [],
+        "max_attempts": 0
+      },
+      "target": {
+        "description": "The account-type dropdown on the open-account form",
+        "fingerprint": {
+          "role": "combobox",
+          "tag": "select"
+        },
+        "frame_path": [],
+        "locators": [
+          {
+            "by": "css",
+            "note": "The id is hand-written in the JSP, not generated, so it survives redeploys; it would not survive a rewrite of the page. Medium, not high: it is the only candidate, with no fallback behind it.",
+            "stability": "medium",
+            "templated": false,
+            "value": "select#type",
+            "verified": {
+              "run_id": "handwritten-m2",
+              "same_element": true,
+              "unique": true
+            }
+          }
+        ]
+      },
+      "timeout_ms": 10000,
+      "value": {
+        "param": "account_type"
+      }
+    },
+    {
+      "action": "select",
+      "effect": "input",
+      "expect": [
+        {
+          "description": "The requested funding account is selected",
+          "then": {
+            "do": "continue"
+          },
+          "when": {
+            "css": "select#fromAccountId",
+            "exact": true,
+            "kind": "visible"
+          }
+        }
+      ],
+      "id": "s3_funding_account",
+      "intent": "Choose the account the opening deposit comes from",
+      "on_target_absent": {
+        "outcome": "funding_account_not_found"
+      },
+      "reentry_point": false,
+      "retry": {
+        "backoff_ms": [],
+        "max_attempts": 0
+      },
+      "target": {
+        "description": "The funding account dropdown, AJAX-loaded after page load",
+        "fingerprint": {
+          "role": "combobox",
+          "tag": "select"
+        },
+        "frame_path": [],
+        "locators": [
+          {
+            "by": "css",
+            "note": "Hand-written JSP id; the AJAX handler targets it by this id too, so the id cannot drift without the page's own script breaking.",
+            "stability": "medium",
+            "templated": false,
+            "value": "select#fromAccountId",
+            "verified": {
+              "run_id": "handwritten-m2",
+              "same_element": true,
+              "unique": true
+            }
+          }
+        ]
+      },
+      "timeout_ms": 10000,
+      "value": {
+        "param": "funding_account_id"
+      },
+      "wait_before": {
+        "kind": "options_loaded",
+        "min": 1,
+        "target": "select#fromAccountId"
+      }
+    },
+    {
+      "action": "click",
+      "effect": "commit",
+      "expect": [
+        {
+          "description": "The account was opened",
+          "then": {
+            "do": "continue"
+          },
+          "when": {
+            "exact": true,
+            "kind": "visible",
+            "text": "Account Opened!"
+          }
+        },
+        {
+          "description": "The app errored after the click. The deposit may or may not have moved, so this goes to a human rather than to a retry. (Signature unconfirmed: not reproduced during M1 recon.)",
+          "then": {
+            "code": "app_error_after_commit",
+            "do": "escalate"
+          },
+          "when": {
+            "exact": true,
+            "kind": "visible",
+            "text": "An internal error has occurred and has been logged."
+          }
+        }
+      ],
+      "id": "s4_submit",
+      "intent": "Submit the form. This opens the account and moves the deposit.",
+      "reentry_point": false,
+      "retry": {
+        "backoff_ms": [],
+        "max_attempts": 0
+      },
+      "target": {
+        "description": "The 'Open New Account' submit button. The left-hand nav has a link of exactly the same name, so role is what separates them.",
+        "fingerprint": {
+          "name": "Open New Account",
+          "role": "button"
+        },
+        "frame_path": [],
+        "locators": [
+          {
+            "by": "role",
+            "note": "Role+name is unique: M1 confirmed the heading, the nav link and this button all read 'Open New Account', and only role tells them apart. A name-only or text locator would match three elements and is therefore not offered as a fallback.",
+            "stability": "high",
+            "templated": false,
+            "value": {
+              "exact": true,
+              "name": "Open New Account",
+              "role": "button"
+            },
+            "verified": {
+              "run_id": "handwritten-m2",
+              "same_element": true,
+              "unique": true
+            }
+          },
+          {
+            "by": "css",
+            "note": "The value attribute is the button's label; it moves with it.",
+            "stability": "medium",
+            "templated": false,
+            "value": "input[type='submit'][value='Open New Account']",
+            "verified": {
+              "run_id": "handwritten-m2",
+              "same_element": true,
+              "unique": true
+            }
+          }
+        ]
+      },
+      "timeout_ms": 30000
+    },
+    {
+      "action": "extract",
+      "effect": "read",
+      "expect": [
+        {
+          "description": "A numeric account id is present",
+          "then": {
+            "do": "succeed"
+          },
+          "when": {
+            "css": "#newAccountId",
+            "exact": true,
+            "kind": "visible"
+          }
+        }
+      ],
+      "extract": {
+        "output": "new_account_id",
+        "parse": "regex",
+        "read": "text",
+        "regex": "^\\s*(\\d+)\\s*$"
+      },
+      "id": "s5_read_new_id",
+      "intent": "Read the new account id off the confirmation panel",
+      "reentry_point": false,
+      "retry": {
+        "backoff_ms": [
+          250,
+          500
+        ],
+        "max_attempts": 2
+      },
+      "target": {
+        "description": "The new account id on the confirmation panel",
+        "fingerprint": {
+          "tag": "a"
+        },
+        "frame_path": [],
+        "locators": [
+          {
+            "by": "css",
+            "note": "The only element on the page carrying the id; M1 read '13566' from it.",
+            "stability": "high",
+            "templated": false,
+            "value": "#newAccountId",
+            "verified": {
+              "run_id": "handwritten-m2",
+              "same_element": true,
+              "unique": true
+            }
+          }
+        ]
+      },
+      "timeout_ms": 10000
+    }
+  ],
+  "success": {
+    "description": "The confirmation panel is showing and it carries a numeric account id.",
+    "negative_control": {
+      "all": [
+        {
+          "exact": true,
+          "kind": "visible",
+          "name": "Open New Account",
+          "role": "heading"
+        },
+        {
+          "kind": "not",
+          "not": {
+            "exact": true,
+            "kind": "visible",
+            "text": "Account Opened!"
+          }
+        }
+      ],
+      "kind": "all"
+    },
+    "signature": {
+      "all": [
+        {
+          "exact": true,
+          "kind": "visible",
+          "text": "Account Opened!"
+        },
+        {
+          "css": "#newAccountId",
+          "exact": true,
+          "kind": "visible"
+        }
+      ],
+      "kind": "all"
+    }
+  },
+  "title": "Open a new ParaBank account",
+  "version": "1.0.0"
+}
