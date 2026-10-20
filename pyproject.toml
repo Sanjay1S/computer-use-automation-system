@@ -1,0 +1,47 @@
+[project]
+name = "understudy"
+version = "0.1.0"
+description = "Record-once, replay-many computer-use capabilities: an LLM discovers a UI flow, the flow compiles into a typed artifact, and deterministic replay runs it with explicit outcomes, guardrails and human handoff."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "playwright>=1.60",
+    "pydantic>=2.9",
+    "pyyaml>=6.0",
+    "typer>=0.12",
+]
+
+[project.scripts]
+understudy = "understudy.cli:app"
+
+[build-system]
+requires = ["uv_build>=0.11.24,<0.12.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "mypy>=2.4.0",
+    "pytest>=9.1.1",
+    "ruff>=0.17.1",
+    "types-pyyaml>=6.0.12.20260906",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+files = ["src"]
+plugins = ["pydantic.mypy"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q -m 'not live'"
+markers = [
+    "live: needs network access, a running ParaBank instance and/or an LLM API key",
+]
