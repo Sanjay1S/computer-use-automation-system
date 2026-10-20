@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 from pydantic import ValidationError
 
@@ -305,3 +307,27 @@ def test_a_hidden_commit_button_is_judged_by_its_label(local: PolicyGate) -> Non
     """A hidden element has no accessible name; its value still says what it does."""
     hidden = ElementFacts(tag="input", input_type="button", value_attr="Open New Account")
     assert local.classify("left_click", hidden) == "commit"
+
+
+# --- tenant files reference the environment -------------------------------------------
+
+LOCAL_FILE = REPO / "tenants" / "parabank-local.yaml"
+
+
+def test_the_local_tenant_follows_parabank_port() -> None:
+    assert load_tenant(LOCAL_FILE, env={"PARABANK_PORT": "8089"}).port == 8089
+    assert load_tenant(LOCAL_FILE, env={}).port == 8080
+    assert load_tenant(LOCAL_FILE, env={"PARABANK_PORT": ""}).port == 8080
+
+
+def test_a_reference_without_a_default_must_be_set(tmp_path: Path) -> None:
+    tenant = tmp_path / "t.yaml"
+    tenant.write_text("id: t\nvendor_app: parabank\nbase_url: http://${PB_HOST}/parabank\n")
+    with pytest.raises(ValueError, match=r"\$\{PB_HOST\} is not set"):
+        load_tenant(tenant, env={})
+    assert load_tenant(tenant, env={"PB_HOST": "pb.test"}).host == "pb.test"
+
+
+def test_an_expanded_value_is_still_validated() -> None:
+    with pytest.raises(ValidationError):
+        load_tenant(LOCAL_FILE, env={"PARABANK_PORT": "8089/x?next=evil"})

@@ -1,7 +1,8 @@
 schema_version: understudy.tenant/v1
 id: parabank-local
 vendor_app: parabank
-# `make parabank-up` maps the container to host port 8080. Where 8080 is already
-# taken (plan §18.1 F4), run `make parabank-up PARABANK_PORT=8089` and change this.
-base_url: http://localhost:8080/parabank
+# PARABANK_PORT is the one setting for the local instance: `make parabank-up` maps
+# the container to it and this URL follows it. Default 8080; a machine where 8080
+# is taken sets PARABANK_PORT in .env (plan §18.1 F4).
+base_url: http://localhost:${PARABANK_PORT:-8080}/parabank
 sandbox: true

@@ -1,6 +1,12 @@
 # Keep this project's environment separate from any virtualenv active in the calling shell.
 unexport VIRTUAL_ENV
 
+# Machine-local settings (gitignored, plain KEY=value lines). Read here and exported
+# to the commands make runs, so `make parabank-up` and the parabank-local tenant
+# URL agree on PARABANK_PORT. A command-line PARABANK_PORT=... still wins.
+-include .env
+export PARABANK_PORT PARABANK_USERNAME PARABANK_PASSWORD ANTHROPIC_API_KEY
+
 PARABANK_IMAGE ?= parasoft/parabank
 PARABANK_PORT ?= 8080
 

@@ -4,8 +4,11 @@ binding supplies it at run time."""
 
 from __future__ import annotations
 
+import os
+import re
+from collections.abc import Mapping
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 from urllib.parse import urlsplit
 
 import yaml
@@ -54,5 +57,32 @@ class TenantBinding(BaseModel):
         return urlsplit(self.base_url).path.rstrip("/")
 
 
-def load_tenant(path: Path) -> TenantBinding:
-    return TenantBinding.model_validate(yaml.safe_load(path.read_text(encoding="utf-8")))
+_ENV_REF = re.compile(r"\$\{([A-Z_][A-Z0-9_]*)(?::-([^}]*))?\}")
+
+
+def load_tenant(path: Path, env: Mapping[str, str] | None = None) -> TenantBinding:
+    """String values may reference the environment as `${NAME}` or
+    `${NAME:-default}`, so one setting (e.g. PARABANK_PORT) can drive both the
+    container mapping and the tenant URL. Expanded after parsing, so a value can
+    never change the document's structure."""
+    raw = yaml.safe_load(path.read_text(encoding="utf-8"))
+    return TenantBinding.model_validate(_expand(raw, os.environ if env is None else env, path))
+
+
+def _expand(value: Any, env: Mapping[str, str], path: Path) -> Any:
+    if isinstance(value, str):
+
+        def one(match: re.Match[str]) -> str:
+            name, default = match.group(1), match.group(2)
+            if name in env and env[name] != "":
+                return env[name]
+            if default is None:
+                raise ValueError(f"{path}: ${{{name}}} is not set and has no default")
+            return default
+
+        return _ENV_REF.sub(one, value)
+    if isinstance(value, dict):
+        return {k: _expand(v, env, path) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_expand(v, env, path) for v in value]
+    return value
