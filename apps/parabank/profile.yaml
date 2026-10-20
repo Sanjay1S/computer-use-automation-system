@@ -1,0 +1,112 @@
+schema_version: understudy.app_profile/v1
+vendor_app: parabank
+surface: web
+description: >
+  Parasoft ParaBank demo banking app (legacy Java EE / Tomcat, server-rendered,
+  jsessionid in URLs, AJAX-loaded option lists, no test ids).
+
+# Verified 2026-10-20 (M1 recon) against:
+#   local:  http://localhost:8089/parabank  (Docker image parasoft/parabank, this
+#           machine remaps the container's internal 8080 to host port 8089 because
+#           8080 was already bound on this host; the image's own listener is 8080)
+#   public: https://parabank.parasoft.com/parabank
+
+login:
+  route: /index.htm
+  username_field: { by: css, value: "input[name='username']" }
+  password_field: { by: css, value: "input[name='password']" }
+  submit: { by: css, value: "input[value='Log In']" }
+  demo_credentials_verified:
+    local: { username: john, password: demo, works: true }
+    public: { username: john, password: demo, works: true }
+
+global_signatures:
+  session_expired:
+    # Confirmed on local: clearing cookies and revisiting a protected route
+    # (overview.htm) does NOT redirect the URL. The same path re-renders the
+    # "Customer Login" form in place.
+    condition:
+      all:
+        - visible: { role: heading, name: "Customer Login" }
+    note: >
+      URL-unchanged signature, not a redirect. Any global-state check must poll
+      the DOM, not rely on navigation/URL change.
+
+  business_error_not_found:
+    # Confirmed on local via activity.htm?id=<bogus>: this is a *business
+    # outcome* signature (bad id), not the plan's assumed generic
+    # "internal error" text.
+    condition:
+      all:
+        - visible: { role: heading, name: "Error!" }
+        - visible: { text_regex: "Could not find account #\\d+" }
+    note: >
+      Distinct from app_internal_error below. Plan §3 assumed this route would
+      show "An internal error has occurred and has been logged." — it does not;
+      that generic text was not observed and needs a different trigger (verify
+      in M2/M4 if/when needed for the taxonomy table).
+
+  app_internal_error:
+    # Not yet observed directly in M1; kept as the documented generic ParaBank
+    # error panel per the brief, pending confirmation by a genuine 5xx/exception.
+    condition:
+      all:
+        - visible: { text: "An internal error has occurred and has been logged." }
+    note: "verify_in_later_milestone: not triggered by a bad id; needs a genuine server error to confirm."
+
+routes:
+  open_account: /openaccount.htm
+  activity: /activity.htm
+  overview: /overview.htm
+  admin: /admin.htm # deny — can re-initialize the shared DB
+
+open_account_page:
+  heading: "Open New Account"
+  type_select:
+    by: css
+    value: "select#type"
+    options_verified: [CHECKING, SAVINGS]
+  from_account_select:
+    by: css
+    value: "select#fromAccountId"
+    loaded_via: ajax
+    wait_signature: { options_loaded: { min: 1 } }
+    options_verified_local: ["12345", "12456", "12567", "12678", "12789", "12900", "13011", "13122", "13233", "13344", "54321"]
+  submit_button:
+    fingerprint: { role: button, name: "Open New Account" }
+    note: >
+      Confirmed: a nav link with the identical name "Open New Account" also
+      exists (role=link). They share a name and differ only by role — locator
+      synthesis must scope by role, never by name alone.
+  nav_link_same_name:
+    fingerprint: { role: link, name: "Open New Account" }
+  success_signature:
+    condition:
+      all:
+        - visible: { text: "Account Opened!" }
+    note: "Confirmed text on local: 'Account Opened!' heading/text present after a successful submit."
+  new_account_id:
+    locator: { by: css, value: "#newAccountId" }
+    pattern: "^\\d+$"
+    verified_sample: "13566"
+
+overview_page:
+  heading_label_varies_by_tenant:
+    local: "Account Overview"
+    public: "Accounts Overview"
+    note: >
+      Real per-tenant label drift, confirmed in M1. This is exactly the kind of
+      thing §12 tenant overrides (patches keyed by step id/locator) are for —
+      do not hardcode the singular/plural heading text as a cross-tenant
+      checkpoint condition.
+
+url_conventions:
+  jsessionid_in_path: true
+  jsessionid_pattern: ";jsessionid=[0-9A-F]+"
+  note: "Confirmed on both instances; canonicalization must strip this before templating a URL into an artifact step."
+
+denied_routes:
+  - /admin.htm # can re-initialize the shared DB; never call on any shared/public tenant
+  - /initializeDB.htm
+  - /logout.htm
+  - /updateprofile.htm
