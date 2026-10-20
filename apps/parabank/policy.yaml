@@ -1,0 +1,37 @@
+schema_version: understudy.policy/v1
+vendor_app: parabank
+
+# Routes are relative to the tenant's base URL (http://localhost:8080/parabank,
+# https://parabank.parasoft.com/parabank, ...), so one policy serves every tenant.
+routes:
+  allow: ["/*"]
+  deny:
+    - /admin.htm # re-initialises the shared database
+    - /initializeDB.htm
+    - /logout.htm # would end the session mid-flow
+    - /updateprofile.htm
+    # Defensive: ParaBank's published REST API also exposes database resets. Not
+    # exercised in recon; listed because denying an unused route costs nothing.
+    - /services*/bank/initializeDB
+    - /services*/bank/cleanDB
+
+actions:
+  [navigate, read_page, get_page_text, screenshot, zoom, left_click, form_input, type, key,
+   scroll, scroll_to, wait, hover]
+
+keys: [Enter, Tab, Escape, Backspace]
+
+commit:
+  button_names:
+    - "Open New Account|Transfer|Send Payment|Apply Now|Update Profile"
+  routes:
+    # Verified in M3 against local ParaBank: the open-account submit is this XHR
+    # (POST ...createAccount?customerId=&newAccountType=&fromAccountId=). Other flows'
+    # commit endpoints are not listed until recon confirms them.
+    - /services_proxy/bank/createAccount
+
+approval:
+  discovery: interactive
+  replay: token_or_interactive
+
+discovery_sandbox_only: true

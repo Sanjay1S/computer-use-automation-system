@@ -2,12 +2,11 @@
 
 Every locator, option list, heading and sample value here comes from the M1
 recon facts recorded in `apps/parabank/profile.yaml` and `runs/recon/` (plan
-§18.1 F1-F6). Where recon did not establish something, it is not asserted here:
+§18.1 F1-F8). Where recon did not establish something, it is not asserted here:
 the two selects carry only their CSS id locator, because the recon snapshot
 shows them as unnamed `combobox` nodes (ParaBank labels them with plain <p>
-text), and the submit button's fingerprint stops at role+name. The single
-exception is flagged inline at s4: the post-commit error text, which M1 never
-triggered.
+text), and the submit button's fingerprint stops at role+name. The post-commit
+error text at s4, unconfirmed in M1, was confirmed in M3 from the page source.
 
 M7 replaces this with the discovered artifact; until then it is what proves the
 schema, the lint rules and the replay engine (M4) against a real page's shape.
@@ -293,7 +292,9 @@ def _s4_submit() -> Step:
                 ),
                 Locator(
                     by="css",
-                    value="input[type='submit'][value='Open New Account']",
+                    # An <input type="button">, not a submit (M3, F8): the form has no
+                    # action and the page script POSTs createAccount on click.
+                    value="input[type='button'][value='Open New Account']",
                     stability="medium",
                     verified=VERIFIED,
                     note="The value attribute is the button's label; it moves with it.",
@@ -306,16 +307,14 @@ def _s4_submit() -> Step:
                 when=VisibleCondition(text="Account Opened!"),
                 then=Disposition(do="continue"),
             ),
-            # This text is the one claim here M1 did NOT observe: profile.yaml records
-            # app_internal_error as needing a genuine 5xx to confirm, and the recon
-            # manifest logged 'error panel visible=False'. It is kept because leaving a
-            # commit with only a success signature would be worse, and an unmatched
-            # outcome escalates anyway; M4 confirms the exact string.
+            # Confirmed in M3 from the page source (F8): this text sits in the hidden
+            # #openAccountError panel, which the page script shows when the
+            # createAccount request fails. `visible` matters: the panel is in the DOM,
+            # hidden, on every load.
             Expectation(
                 description=(
                     "The app errored after the click. The deposit may or may not have "
-                    "moved, so this goes to a human rather than to a retry. "
-                    "(Signature unconfirmed: not reproduced during M1 recon.)"
+                    "moved, so this goes to a human rather than to a retry."
                 ),
                 when=VisibleCondition(text="An internal error has occurred and has been logged."),
                 then=Disposition(do="escalate", code="app_error_after_commit"),

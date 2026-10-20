@@ -1,0 +1,60 @@
+<div>
+  <div id="openAccountForm">
+    <h1 class="title">Open New Account</h1>
+    <form>
+      <p><b>What type of Account would you like to open?</b></p>
+      <select id="type" class="input">
+          <option value="0">CHECKING</option>
+          <option value="1">SAVINGS</option>
+      </select>
+      <br><br>
+      <p><b>A minimum of $100.00 must be deposited into this account at time of opening. Please choose an existing account to transfer funds into the new account.</b></p>
+      <select id="fromAccountId" class="input"></select>
+      <br><br>
+      <div><input type="button" class="button" value="Open New Account"></div>
+    </form>
+  </div>
+
+  <div id="openAccountResult" style="display:none">
+    <h1 class="title">Account Opened!</h1>
+    <p>Congratulations, your account is now open.</p>
+    <p><b>Your new account number:</b> <a id="newAccountId" href=""></a></p>
+  </div>
+
+  <div id="openAccountError" style="display:none">
+    <h1 class="title">Error!</h1>
+    <p class="error">An internal error has occurred and has been logged.</p>
+  </div>
+</div>
+<script>
+  // Vanilla rewrite of ParaBank's jQuery page script (no network for jQuery here).
+  document.addEventListener("DOMContentLoaded", function () {
+    var show = function (id, visible) { document.getElementById(id).style.display = visible ? "" : "none"; };
+    var showError = function () { show("openAccountForm", false); show("openAccountResult", false); show("openAccountError", true); };
+    var typeSelect = document.getElementById("type");
+    var fromSelect = document.getElementById("fromAccountId");
+    fetch("services_proxy/bank/customers/{{customer}}/accounts")
+      .then(function (r) { if (!r.ok) { throw new Error(String(r.status)); } return r.json(); })
+      .then(function (data) {
+        setTimeout(function () {
+          fromSelect.innerHTML = "";
+          data.forEach(function (a) {
+            var o = document.createElement("option"); o.value = a.id; o.textContent = a.id; fromSelect.appendChild(o);
+          });
+        }, {{delay}});
+      })
+      .catch(showError);
+    document.querySelector("input[type=button]").addEventListener("click", function () {
+      var url = "services_proxy/bank/createAccount?customerId={{customer}}&newAccountType=" + typeSelect.value
+        + "&fromAccountId=" + fromSelect.value;
+      fetch(url, { method: "POST", headers: { "Content-Type": "application/json" } })
+        .then(function (r) { if (!r.ok) { throw new Error(String(r.status)); } return r.json(); })
+        .then(function (data) {
+          var link = document.getElementById("newAccountId");
+          link.setAttribute("href", "activity.htm?id=" + data.id); link.textContent = data.id;
+          show("openAccountForm", false); show("openAccountResult", true);
+        })
+        .catch(showError);
+    });
+  });
+</script>

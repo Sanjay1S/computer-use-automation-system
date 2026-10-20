@@ -47,12 +47,14 @@ global_signatures:
       in M2/M4 if/when needed for the taxonomy table).
 
   app_internal_error:
-    # Not yet observed directly in M1; kept as the documented generic ParaBank
-    # error panel per the brief, pending confirmation by a genuine 5xx/exception.
+    # Confirmed in M3 from openaccount.htm's source: the text is in the hidden
+    # #openAccountError panel, shown by the page script when an XHR fails
+    # (createAccount or the accounts list). Present in the DOM on every load, so
+    # it must be matched as *visible*, never by presence.
     condition:
       all:
         - visible: { text: "An internal error has occurred and has been logged." }
-    note: "verify_in_later_milestone: not triggered by a bad id; needs a genuine server error to confirm."
+    note: "Shown on XHR failure; not triggered by a bad id (that is business_error_not_found)."
 
 routes:
   open_account: /openaccount.htm
@@ -66,6 +68,8 @@ open_account_page:
     by: css
     value: "select#type"
     options_verified: [CHECKING, SAVINGS]
+    # M3: option values are 0 and 1; CHECKING/SAVINGS are the labels. Select by label.
+    option_values_verified: { CHECKING: "0", SAVINGS: "1" }
   from_account_select:
     by: css
     value: "select#fromAccountId"
@@ -74,6 +78,11 @@ open_account_page:
     options_verified_local: ["12345", "12456", "12567", "12678", "12789", "12900", "13011", "13122", "13233", "13344", "54321"]
   submit_button:
     fingerprint: { role: button, name: "Open New Account" }
+    # M3: an <input type="button">, not a submit. The form has no action; the page
+    # script POSTs services_proxy/bank/createAccount?customerId=&newAccountType=
+    # &fromAccountId= and then shows #openAccountResult or #openAccountError.
+    element_verified: "input[type='button'][value='Open New Account']"
+    commit_request: "POST /services_proxy/bank/createAccount"
     note: >
       Confirmed: a nav link with the identical name "Open New Account" also
       exists (role=link). They share a name and differ only by role — locator
@@ -84,7 +93,9 @@ open_account_page:
     condition:
       all:
         - visible: { text: "Account Opened!" }
-    note: "Confirmed text on local: 'Account Opened!' heading/text present after a successful submit."
+    note: >
+      Confirmed text on local. M3: the #openAccountResult panel holding it is in the
+      DOM, hidden, before submit, so only visibility distinguishes success.
   new_account_id:
     locator: { by: css, value: "#newAccountId" }
     pattern: "^\\d+$"

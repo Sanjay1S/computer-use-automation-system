@@ -1,0 +1,13 @@
+<h2>Customer Login</h2>
+<div id="loginPanel">
+  <form name="login" action="login.htm{{sid}}" method="POST">
+    {{error}}
+    <p><b>Username</b></p>
+    <div class="login"><input type="text" class="input" name="username"></div>
+    <p><b>Password</b></p>
+    <div class="login"><input type="password" class="input" name="password"></div>
+    <div class="login"><input type="submit" class="button" value="Log In"></div>
+  </form>
+  <p><a href="lookup.htm{{sid}}">Forgot login info?</a></p>
+  <p><a href="register.htm{{sid}}">Register</a></p>
+</div>

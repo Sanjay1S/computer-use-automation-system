@@ -1,0 +1,14 @@
+<div id="showOverview">
+  <h1 class="title">Accounts Overview</h1>
+  <p>Customer reference on file: SSN {{ssn}}</p>
+  <table id="accountTable" class="gridTable">
+    <thead>
+      <tr><th>Account</th><th>Balance*</th><th>Available Amount</th></tr>
+    </thead>
+    <tbody>
+{{rows}}
+      <tr><td><b>Total</b></td><td><b>{{total}}</b></td><td>&nbsp;</td></tr>
+    </tbody>
+  </table>
+  <p class="smallText">*Balance includes deposits that may be subject to holds</p>
+</div>

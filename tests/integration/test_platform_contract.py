@@ -2,7 +2,9 @@
 
 import re
 
-from playwright.sync_api import Page
+from playwright.sync_api import BrowserContext, Page, Route
+
+from tests.conftest import Loopback
 
 FORM = """
 <h1>Open New Account</h1>
@@ -65,3 +67,32 @@ def test_screenshot_masking_is_available(page: Page) -> None:
 
     masked = page.screenshot(mask=[page.locator("#pw")])
     assert masked.startswith(b"\x89PNG")
+
+
+def test_route_handlers_never_see_redirect_hops(
+    context: BrowserContext, loopback: Loopback
+) -> None:
+    """Why the policy gate also emits Chromium resolver rules (plan §18.3 D6)."""
+    routed: list[str] = []
+
+    def record(route: Route) -> None:
+        routed.append(route.request.url)
+        route.fallback()
+
+    context.route("**/*", record)
+    page = context.new_page()
+    page.goto(f"{loopback.base_url}/hop-off-host")
+    assert page.url == f"http://localhost:{loopback.port}/app/landed"
+    assert routed == [f"{loopback.base_url}/hop-off-host"]
+
+
+def test_an_element_snapshot_strands_page_refs(page: Page) -> None:
+    """Why WebSurface retakes the page snapshot after reading an element's facts."""
+    page.set_content(FORM)
+    snapshot = page.aria_snapshot(mode="ai")
+    link = page.get_by_ref(_ref(snapshot, 'link "Open New Account"'))
+    assert link.count() == 1
+    page.locator("#type").aria_snapshot()
+    assert link.count() == 0
+    page.aria_snapshot(mode="ai")
+    assert link.count() == 1

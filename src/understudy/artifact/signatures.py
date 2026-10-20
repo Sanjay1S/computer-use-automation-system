@@ -18,7 +18,9 @@ class _Node(BaseModel):
 
 
 class UrlCondition(_Node):
-    """Matches the current URL's path. Never the host: that is a tenant binding."""
+    """Matches the current URL's path relative to the tenant's base URL, with path
+    parameters (`;jsessionid=…`) removed: `/openaccount\\.htm$`. Never the host or the
+    mount point, which are tenant bindings. False on a page outside the app."""
 
     kind: Literal["url"] = "url"
     path_regex: str
@@ -51,19 +53,24 @@ class _ElementMatcher(_Node):
     def _at_least_one_matcher(self) -> Self:
         if not any(getattr(self, field) is not None for field in self.MATCHERS):
             raise ValueError(f"{self.kind} needs at least one of: " + ", ".join(self.MATCHERS))
+        # An accessible name is only matched through a role (Playwright's get_by_role);
+        # without one the condition could be written but never evaluated.
+        if (self.name is not None or self.name_regex is not None) and self.role is None:
+            raise ValueError(f"{self.kind}: name and name_regex need a role")
         return self
 
 
 class VisibleCondition(_ElementMatcher):
-    """An element is present and visible. At least one of the matchers is required."""
+    """At least one matching element is visible; present-but-hidden does not count.
+    The matchers given are ANDed on the same element."""
 
     kind: Literal["visible"] = "visible"
 
 
 class AbsentCondition(_ElementMatcher):
-    """No element matches. The inverse of `visible`, and not the same as `not visible`:
-    this one is true when nothing matches, where `not` negates whatever the inner
-    condition decided."""
+    """No *visible* element matches. Elements hidden in the DOM do not count: legacy
+    pages ship their result and error panels hidden from the start (ParaBank's
+    "Account Opened!" is in the page before the form is submitted)."""
 
     kind: Literal["absent"] = "absent"
 
