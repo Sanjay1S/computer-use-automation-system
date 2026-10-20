@@ -9,9 +9,10 @@ from __future__ import annotations
 
 import json
 import secrets
+import string
 import threading
 from collections import deque
-from collections.abc import Mapping
+from collections.abc import Collection, Mapping
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Literal
@@ -77,7 +78,10 @@ class RunContext:
         recent: int = 50,
     ) -> None:
         stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
-        self.run_id = run_id or f"{kind}-{stamp}-{secrets.token_hex(3)}"
+        # Letters only: a hex suffix is all digits 6% of the time, and the redactor's
+        # digit backstop then masks the run id as if it were an account number.
+        suffix = "".join(secrets.choice(string.ascii_lowercase) for _ in range(6))
+        self.run_id = run_id or f"{kind}-{stamp}-{suffix}"
         self.dir = root / self.run_id
         self.dir.mkdir(parents=True, exist_ok=False)
         self.redactor = redactor
@@ -87,7 +91,8 @@ class RunContext:
         self._recent: deque[Event] = deque(maxlen=recent)
         self.write_json(
             "run.json",
-            {"run_id": self.run_id, "kind": kind, "started_at": stamp, **dict(meta or {})},
+            {**dict(meta or {}), "run_id": self.run_id, "kind": kind, "started_at": stamp},
+            verbatim=("run_id", "kind", "started_at"),
         )
 
     def know(self, values: Mapping[str, Sensitivity]) -> None:
@@ -161,17 +166,27 @@ class RunContext:
         path.mkdir(parents=True, exist_ok=True)
         return path
 
-    def write_json(self, name: str, payload: BaseModel | Mapping[str, Any]) -> Path:
+    def write_json(
+        self,
+        name: str,
+        payload: BaseModel | Mapping[str, Any],
+        *,
+        verbatim: Collection[str] = (),
+    ) -> Path:
         """Strings in the payload are redacted as free text. Raw outputs go back to
-        the caller in memory; what is persisted is the redacted copy."""
-        raw = payload.model_dump(mode="json") if isinstance(payload, BaseModel) else payload
+        the caller in memory; what is persisted is the redacted copy.
+
+        `verbatim` names top-level keys that are identifiers, not data (run id,
+        artifact hash, capability id): the detectors would otherwise mangle them, a
+        sha256 into `[SECRET]` and a numeric id into a masked account number. Only
+        system-generated values belong there; never inputs, outputs or page text."""
+        dumped = payload.model_dump(mode="json") if isinstance(payload, BaseModel) else payload
+        redacted = self.redactor.data({k: v for k, v in dumped.items() if k not in verbatim})
+        raw = {**redacted, **{k: v for k, v in dumped.items() if k in verbatim}}
         path = self.dir / name
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(
-            json.dumps(
-                self.redactor.data(raw), indent=2, sort_keys=True, default=str, ensure_ascii=False
-            )
-            + "\n",
+            json.dumps(raw, indent=2, sort_keys=True, default=str, ensure_ascii=False) + "\n",
             encoding="utf-8",
         )
         return path

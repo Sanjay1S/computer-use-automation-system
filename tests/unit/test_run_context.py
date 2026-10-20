@@ -87,3 +87,26 @@ def test_screenshot_paths_are_numbered_and_safe(run: RunContext) -> None:
     assert first.name == "001_s1_open_form.png"
     assert second.name == "002_______escape.png"
     assert second.parent == run.dir / "screenshots"
+
+
+def test_run_ids_survive_redaction_wherever_they_are_quoted(tmp_path: Path) -> None:
+    """A hex suffix was all digits 6% of the time and got masked as an account number.
+    300 ids would include such a suffix with near certainty."""
+    redactor = Redactor(b"k")
+    for _ in range(300):
+        run = RunContext(tmp_path, kind="replay", redactor=redactor)
+        assert redactor.text(run.run_id) == run.run_id
+    assert json.loads((run.dir / "run.json").read_text())["run_id"] == run.run_id
+
+
+def test_verbatim_keys_keep_identifiers_and_nothing_else(run: RunContext) -> None:
+    digest = "sha256:" + "4f62f38dd96913ae" * 4
+    path = run.write_json(
+        "result.json",
+        {"artifact_hash": digest, "echo": digest, "outputs": {"new_account_id": "13566"}},
+        verbatim=("artifact_hash",),
+    )
+    written = json.loads(path.read_text())
+    assert written["artifact_hash"] == digest
+    assert written["echo"] == "sha256:[SECRET]"
+    assert written["outputs"]["new_account_id"] == "••••6"
