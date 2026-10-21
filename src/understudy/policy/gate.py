@@ -183,7 +183,10 @@ class PolicyGate(PolicyView):
         *,
         key: str | None = None,
         mode: Mode,
+        provider: bool = False,
     ) -> Decision:
+        """`provider`: the session provider is acting, which alone may fill credential
+        fields. Every other rule applies to it as to anyone."""
         decision = self.check_member(member)
         if not decision.allowed:
             return decision
@@ -193,6 +196,7 @@ class PolicyGate(PolicyView):
                 return decision
         if (
             mode == "discovery"
+            and not provider
             and member in ("type", "form_input")
             and element
             and element.is_password

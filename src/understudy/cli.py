@@ -1,11 +1,14 @@
 import json
 import os
+from collections.abc import Callable
 from contextlib import ExitStack
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated
 
+import anthropic
 import typer
+import yaml
 from playwright.sync_api import Page, sync_playwright
 from pydantic import ValidationError
 
@@ -16,6 +19,10 @@ from understudy.artifact.lint import lint as run_lint
 from understudy.artifact.review import render
 from understudy.artifact.schema import Capability
 from understudy.chaos import Chaos, parse_fault
+from understudy.discovery.agent import AnthropicModel, ModelTurn
+from understudy.discovery.driver import ApprovalRequest
+from understudy.discovery.goal import load_goal
+from understudy.discovery.run import discover
 from understudy.policy.gate import PolicyGate
 from understudy.profile import load_profile
 from understudy.replay.engine import Replayer
@@ -150,7 +157,7 @@ def replay_command(
         values = _parse_inputs(inputs or [])
         faults = [parse_fault(spec, capability) for spec in inject or []]
         credentials = Credentials.from_env(profile.login)
-    except (OSError, ValueError, MissingCredentials) as error:
+    except (OSError, ValueError, yaml.YAMLError, MissingCredentials) as error:
         typer.echo(f"cannot replay: {error}", err=True)
         raise typer.Exit(2) from None
 
@@ -177,6 +184,95 @@ def replay_command(
     typer.echo(result.model_dump_json(indent=2, exclude_none=True))
     typer.echo(f"{result.status}: run folder {runs_dir / result.run_id}", err=True)
     raise typer.Exit(EXIT_CODES[result.status])
+
+
+@app.command("discover")
+def discover_command(
+    goal_path: Annotated[Path, typer.Argument(help="Path to a goal spec (YAML).")],
+    tenant_id: Annotated[str, typer.Option("--tenant", help="Tenant id under tenants/.")],
+    params: Annotated[
+        list[str] | None,
+        typer.Option("--param", help="Override a goal param's demo value: name=value."),
+    ] = None,
+    headed: Annotated[bool, typer.Option("--headed", help="Show the browser window.")] = False,
+    out: Annotated[
+        Path | None,
+        typer.Option("--out", help="Draft path. Default: capabilities/drafts/<id>.json."),
+    ] = None,
+    effort: Annotated[str, typer.Option("--effort", help="Model effort level.")] = "high",
+    runs_dir: Annotated[Path, typer.Option("--runs-dir", help="Where run folders go.")] = Path(
+        "runs"
+    ),
+) -> None:
+    """Discover a flow with the model and compile it into a draft capability.
+
+    Runs only on sandbox tenants. Every commit the model attempts is shown here for
+    approval first. Exit code: 0 compiled and lint-clean, 1 not compiled or lint
+    errors, 2 usage, 3 rejected.
+    """
+    load_env_file(Path(".env"))
+    try:
+        goal = load_goal(goal_path)
+        tenant = load_tenant(TENANTS / f"{tenant_id}.yaml")
+        app_dir = APPS / tenant.vendor_app
+        gate = PolicyGate.load(app_dir / "policy.yaml", tenant)
+        profile = load_profile(app_dir / "profile.yaml")
+        values = goal.values(_parse_inputs(params or [], what="--param"))
+        credentials = Credentials.from_env(profile.login)
+    except (OSError, ValueError, yaml.YAMLError, MissingCredentials) as error:
+        typer.echo(f"cannot discover: {error}", err=True)
+        raise typer.Exit(2) from None
+    if effort not in ("low", "medium", "high", "xhigh", "max"):
+        typer.echo(f"unknown --effort {effort!r}", err=True)
+        raise typer.Exit(2)
+
+    with ExitStack() as stack:
+
+        def open_page() -> Page:
+            playwright = stack.enter_context(sync_playwright())
+            browser = playwright.chromium.launch(headless=not headed, args=gate.chromium_args())
+            stack.callback(browser.close)
+            return browser.new_context(**CONTEXT_OPTIONS).new_page()
+
+        result = discover(
+            goal,
+            values,
+            gate=gate,
+            profile=profile,
+            credentials=credentials,
+            model=MODEL_FACTORY(),
+            open_page=open_page,
+            runs_dir=runs_dir,
+            approve=_ask_operator,
+            draft_path=out,
+            effort=effort,
+        )
+    typer.echo(result.model_dump_json(indent=2, exclude_none=True))
+    typer.echo(f"{result.status}: run folder {runs_dir / result.run_id}", err=True)
+    if result.status == "rejected":
+        raise typer.Exit(3)
+    raise typer.Exit(0 if result.status == "compiled" and result.lint_ok else 1)
+
+
+def _anthropic_model() -> ModelTurn:
+    """The SDK resolves credentials itself (ANTHROPIC_API_KEY, or an auth profile)."""
+    return AnthropicModel(anthropic.Anthropic())
+
+
+MODEL_FACTORY: Callable[[], ModelTurn] = _anthropic_model
+"""Swapped for a scripted model in tests."""
+
+
+def _ask_operator(request: ApprovalRequest) -> bool:
+    """Discovery's approval mode is interactive (policy.yaml): a person at this terminal."""
+    typer.echo("", err=True)
+    typer.echo("The model wants to run an action that commits:", err=True)
+    typer.echo(f"  {request.member} on {request.target}", err=True)
+    typer.echo(f"  page {request.url}", err=True)
+    try:
+        return bool(typer.confirm("Approve it?", default=False, err=True))
+    except (typer.Abort, EOFError):
+        return False
 
 
 @app.command("schema")
@@ -213,14 +309,14 @@ def load_env_file(path: Path) -> None:
             os.environ[key] = value
 
 
-def _parse_inputs(pairs: list[str]) -> dict[str, str]:
+def _parse_inputs(pairs: list[str], *, what: str = "--input") -> dict[str, str]:
     values: dict[str, str] = {}
     for pair in pairs:
         name, sep, value = pair.partition("=")
         if not sep or not name:
-            raise ValueError("--input takes name=value (an argument had no name)")
+            raise ValueError(f"{what} takes name=value (an argument had no name)")
         if name in values:
-            raise ValueError(f"input {name!r} given twice")
+            raise ValueError(f"{what} {name!r} given twice")
         values[name] = value
     return values
 

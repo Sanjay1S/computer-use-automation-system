@@ -5,6 +5,7 @@ description = "Record-once, replay-many computer-use capabilities: an LLM discov
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "anthropic==1.15.0",
     "playwright>=1.60",
     "pydantic>=2.9",
     "pyyaml>=6.0",

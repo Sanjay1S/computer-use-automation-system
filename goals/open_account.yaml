@@ -1,0 +1,43 @@
+schema_version: understudy.goal/v1
+capability: parabank.open_account
+version: 1.0.0
+title: Open a new ParaBank account
+description: >
+  Opens a new CHECKING or SAVINGS account for the signed-in ParaBank customer,
+  funded by transferring the minimum opening deposit from one of their existing
+  accounts, and returns the new account's id. The funding account must belong to
+  the signed-in customer.
+vendor_app: parabank
+session: parabank.customer
+goal: Open a new {account_type} account, funded from account {funding_account_id}.
+start_route: /openaccount.htm
+side_effects: >
+  Creates a real account and moves the minimum opening deposit out of the funding
+  account. Running it twice opens two accounts.
+
+params:
+  - name: account_type
+    type: enum
+    enum: [CHECKING, SAVINGS]
+    description: The kind of account to open.
+    # Not the form's default (CHECKING), so the recording shows the choice being made.
+    demo: SAVINGS
+    example: SAVINGS
+  - name: funding_account_id
+    type: string
+    pattern: '^\d+$'
+    sensitivity: financial_id
+    description: >
+      The existing account the opening deposit comes from. Must be one of the
+      signed-in customer's own accounts.
+    # One of the demo customer's accounts on a fresh local container. Account ids
+    # differ per instance: pass --param funding_account_id=<id> on another tenant.
+    demo: "13344"
+    example: "12345"
+
+outputs:
+  - name: new_account_id
+    type: string
+    pattern: '^\d+$'
+    sensitivity: financial_id
+    description: The id of the account that was opened.

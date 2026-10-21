@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import contextlib
 import re
+import time
 from collections.abc import Iterator, Mapping, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -101,6 +102,30 @@ _COVERED_JS = """
 }
 """
 
+# A selector for the element at a point (or the focused one) that names exactly that
+# element: a child-combinator path of nth-of-type steps from <html>. The nearest
+# clickable ancestor stands in for a span inside a button. Frames are not entered.
+_PATH_TO_JS = """
+(point) => {
+  let el = point ? document.elementFromPoint(point[0], point[1]) : document.activeElement;
+  if (!el || el === document.body || el === document.documentElement) return null;
+  if (point) {
+    el = el.closest("a, button, input, select, textarea, label, summary, [role=button], "
+      + "[role=link], [role=checkbox], [role=radio], [onclick]") || el;
+  }
+  if (el.tagName === "IFRAME" || el.tagName === "FRAME") return "frame";
+  const parts = [];
+  for (let n = el; n && n !== document.documentElement; n = n.parentElement) {
+    if (!n.parentElement) return null;
+    const same = Array.from(n.parentElement.children).filter((c) => c.tagName === n.tagName);
+    parts.unshift(`${n.tagName.toLowerCase()}:nth-of-type(${same.indexOf(n) + 1})`);
+  }
+  return "html > " + parts.join(" > ");
+}
+"""
+
+_MARKUP_SIZE_JS = "() => document.documentElement ? document.documentElement.outerHTML.length : 0"
+
 _PASSWORD_VALUES_JS = """
 () => Array.from(document.querySelectorAll("input[type=password]")).map((i) => i.value)
 """
@@ -171,6 +196,8 @@ class WebSurface:
         self.page = page
         self.gate = gate
         self.mode: Mode = mode
+        self._provider = 0
+        """Depth of `session_provider()` scopes. A count, so a nested one cannot end the outer."""
         self.run_id = run_id
         self.refs = RefTable()
         self._dialog_rules = [(re.compile(r) if r else None, a) for r, a in dialog_rules]
@@ -304,6 +331,7 @@ class WebSurface:
             facts,
             key=value if action == "press" else None,
             mode=self.mode,
+            provider=self._provider > 0,
         )
         self._enforce(decision, spend=False)
         try:
@@ -344,6 +372,87 @@ class WebSurface:
         except PlaywrightError as error:
             raise _surface_error(error) from None
 
+    def current_value(self, element: PwLocator) -> str:
+        self._ready()
+        try:
+            return element.input_value(timeout=2_000)
+        except PlaywrightError as error:
+            raise _surface_error(error) from None
+
+    def selected(self, element: PwLocator) -> tuple[str, str] | None:
+        """A select's (or checked radio's) chosen option as (value, label)."""
+        self._ready()
+        try:
+            # One element, by evaluate: evaluate_all finds nothing through a ref locator.
+            chosen = cast(list[list[str]], element.evaluate(f"(el) => ({_SELECTED_JS})([el])"))
+        except PlaywrightError as error:
+            raise _surface_error(error) from None
+        return (chosen[0][0], chosen[0][1]) if chosen else None
+
+    def settle(self, *, quiet_ms: int = 300, max_ms: int = 2_000, poll_ms: int = 100) -> None:
+        """Wait until the page's markup has not changed for `quiet_ms`, or `max_ms` has
+        passed. Discovery uses it to record a page as the model will next see it;
+        replay never does (it waits on signatures, not on quiet)."""
+        deadline = time.monotonic() + max_ms / 1000
+        last: object = None
+        quiet_since = time.monotonic()
+        while time.monotonic() < deadline:
+            try:
+                now: object = (self.page.url, self.page.evaluate(_MARKUP_SIZE_JS))
+            except PlaywrightError:
+                now = None  # mid-navigation: not settled
+            if now is None or now != last:
+                last, quiet_since = now, time.monotonic()
+            elif time.monotonic() - quiet_since >= quiet_ms / 1000:
+                return
+            self.pause(poll_ms)
+
+    def element_at(self, x: float, y: float) -> PwLocator:
+        """The element a click at this viewport point would land on (its nearest
+        clickable ancestor), as a locator naming exactly it. Lets a coordinate action
+        be judged and recorded by element, like a ref action."""
+        return self._path_locator([x, y], "at that point")
+
+    def focused_element(self) -> PwLocator | None:
+        """The focused element, where keys and typed text go; None when it is the page."""
+        try:
+            return self._path_locator(None, "focused")
+        except ActionFailed:
+            return None
+
+    def hover(self, element: PwLocator, *, timeout_ms: int = 5_000) -> None:
+        self._ready()
+        try:
+            element.hover(timeout=timeout_ms)
+        except PlaywrightError as error:
+            raise _surface_error(error) from None
+
+    def scroll_into_view(self, element: PwLocator, *, timeout_ms: int = 5_000) -> None:
+        self._ready()
+        try:
+            element.scroll_into_view_if_needed(timeout=timeout_ms)
+        except PlaywrightError as error:
+            raise _surface_error(error) from None
+
+    def wheel(self, x: float, y: float, dx: float, dy: float) -> None:
+        self._ready()
+        try:
+            self.page.mouse.move(x, y)
+            self.page.mouse.wheel(dx, dy)
+        except PlaywrightError as error:
+            raise _surface_error(error) from None
+
+    def screenshot_png(
+        self, *, clip: Mapping[str, float] | None = None, extra_masks: Sequence[str] = ()
+    ) -> bytes:
+        """A screenshot in memory, for the model rather than for filing (see
+        `capture.screenshot_png` for what is masked)."""
+        self._ready()
+        try:
+            return capture.screenshot_png(self.page, clip=clip, extra_masks=extra_masks)
+        except PlaywrightError as error:
+            raise _surface_error(error) from None
+
     def pause(self, ms: int) -> None:
         """Wait while the page's events (routes, dialogs, responses) keep being
         dispatched. A Python sleep would hold them until the next Playwright call."""
@@ -357,6 +466,17 @@ class WebSurface:
         """Requests to commit routes let through so far. Evidence for whoever has to
         decide what a commit with an unknown outcome did."""
         return self._commit_requests
+
+    @contextmanager
+    def session_provider(self) -> Iterator[None]:
+        """Actions taken by the session provider, which alone may fill credential fields.
+        In discovery the model may never type into a password field; signing in before
+        the model starts is what keeps credentials away from it."""
+        self._provider += 1
+        try:
+            yield
+        finally:
+            self._provider -= 1
 
     @contextmanager
     def commit_window(self) -> Iterator[None]:
@@ -552,6 +672,21 @@ class WebSurface:
             raise PolicyBlocked(
                 "this action commits and no approved commit is left in this window", "commit"
             )
+
+    def _path_locator(self, point: list[float] | None, what: str) -> PwLocator:
+        self._ready()
+        try:
+            path = cast(str | None, self.page.evaluate(_PATH_TO_JS, point))
+        except PlaywrightError as error:
+            raise _surface_error(error) from None
+        if path is None:
+            raise ActionFailed(f"no element is {what}")
+        if path == "frame":
+            raise ActionFailed(f"the element {what} is inside a frame; use a ref from read_page")
+        element = self.page.locator(f"css={path}")
+        if element.count() != 1:
+            raise TargetChanged(f"the element {what} changed while it was being found")
+        return element
 
     def _password_values(self) -> set[str]:
         values: set[str] = set()

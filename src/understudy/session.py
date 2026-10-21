@@ -61,21 +61,22 @@ class FormLogin:
         form = self.form
         deadline = time.monotonic() + form.timeout_ms / 1000
         surface.navigate(f"{self.tenant.base_url}{form.route}", timeout_ms=form.timeout_ms)
-        for target, value in (
-            (form.username_field, self._credentials.username),
-            (form.password_field, self._credentials.password),
-        ):
+        with surface.session_provider():
+            for target, value in (
+                (form.username_field, self._credentials.username),
+                (form.password_field, self._credentials.password),
+            ):
+                surface.act(
+                    "fill",
+                    self._find(surface, target, deadline, poll_ms),
+                    value,
+                    fingerprint=target.fingerprint,
+                )
             surface.act(
-                "fill",
-                self._find(surface, target, deadline, poll_ms),
-                value,
-                fingerprint=target.fingerprint,
+                "click",
+                self._find(surface, form.submit, deadline, poll_ms),
+                fingerprint=form.submit.fingerprint,
             )
-        surface.act(
-            "click",
-            self._find(surface, form.submit, deadline, poll_ms),
-            fingerprint=form.submit.fingerprint,
-        )
         while True:
             # Rejected first: a refused login re-renders the form, which is not signed in
             # but also not "still loading".

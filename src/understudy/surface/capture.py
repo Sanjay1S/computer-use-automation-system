@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import json
 import re
-from collections.abc import Collection, Sequence
+from collections.abc import Collection, Mapping, Sequence
 from pathlib import Path
 from typing import Any, cast
 
@@ -74,16 +74,33 @@ def sensitive_fields(frame: Page | Frame) -> list[PwLocator]:
 def screenshot(page: Page, path: Path, extra_masks: Sequence[str] = ()) -> Path:
     """Password and PII fields are painted over in every frame, plus any selectors
     the app profile names (e.g. a panel that prints account numbers)."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    page.screenshot(path=str(path), mask=_masks(page, extra_masks), animations="disabled")
+    return path
+
+
+def screenshot_png(
+    page: Page, *, clip: Mapping[str, float] | None = None, extra_masks: Sequence[str] = ()
+) -> bytes:
+    """A screenshot in memory, for showing to the model during discovery. Credential
+    and PII fields are always masked. The profile's panel masks (`extra_masks`) are
+    for filed evidence: the model reads those panels in the accessibility snapshot
+    anyway, and needs them to act (a list of accounts to choose from)."""
+    return page.screenshot(
+        mask=_masks(page, extra_masks),
+        animations="disabled",
+        clip=cast(Any, dict(clip)) if clip else None,
+    )
+
+
+def _masks(page: Page, extra_masks: Sequence[str]) -> list[PwLocator]:
     masks: list[PwLocator] = []
     for frame in page.frames:
         try:
             masks += sensitive_fields(frame)
         except Exception:  # a frame that navigated away mid-capture has nothing to mask
             continue
-    masks += [page.locator(f"css={selector}") for selector in extra_masks]
-    path.parent.mkdir(parents=True, exist_ok=True)
-    page.screenshot(path=str(path), mask=masks, animations="disabled")
-    return path
+    return masks + [page.locator(f"css={selector}") for selector in extra_masks]
 
 
 def masked_texts(page: Page, masks: Sequence[str]) -> set[str]:

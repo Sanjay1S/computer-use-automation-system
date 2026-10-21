@@ -120,7 +120,7 @@ def check_inputs(capability: Capability, inputs: Mapping[str, str]) -> list[str]
             if spec.required:
                 problems.append(f"input {name!r} is required")
             continue
-        problems += [f"input {name!r} {p}" for p in _value_problems(spec, inputs[name])]
+        problems += [f"input {name!r} {p}" for p in value_problems(spec, inputs[name])]
     for where, names in bound_params(capability).items():
         for name in sorted(names - set(inputs)):
             if name in specs and not specs[name].required:
@@ -128,7 +128,7 @@ def check_inputs(capability: Capability, inputs: Mapping[str, str]) -> list[str]
     return problems
 
 
-def _value_problems(spec: InputSpec, value: str) -> list[str]:
+def value_problems(spec: InputSpec, value: str) -> list[str]:
     problems: list[str] = []
     number: Decimal | None = None
     if spec.type == "enum" and value not in (spec.enum or []):

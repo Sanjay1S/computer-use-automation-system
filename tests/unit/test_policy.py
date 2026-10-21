@@ -331,3 +331,12 @@ def test_a_reference_without_a_default_must_be_set(tmp_path: Path) -> None:
 def test_an_expanded_value_is_still_validated() -> None:
     with pytest.raises(ValidationError):
         load_tenant(LOCAL_FILE, env={"PARABANK_PORT": "8089/x?next=evil"})
+
+
+def test_only_the_session_provider_may_fill_a_password_in_discovery(local: PolicyGate) -> None:
+    password = ElementFacts(tag="input", input_type="password")
+
+    assert local.check_action("form_input", password, mode="discovery").rule == "password"
+    assert local.check_action("form_input", password, mode="discovery", provider=True).allowed
+    # The flag lifts the credential rule only: a disabled member stays disabled.
+    assert local.check_action("find", password, mode="discovery", provider=True).rule == "actions"
