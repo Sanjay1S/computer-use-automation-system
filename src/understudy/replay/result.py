@@ -2,8 +2,10 @@
 
 Exactly one of `outputs` (succeeded), `outcome` (business_outcome), `rejection`
 (rejected), `escalation` (needs_human) or `failure` (failed) explains the status;
-`needs_human` may also carry the `failure` that led to it. Recoverable conditions
-never become the status: they are listed in `recoveries` and the run goes on.
+`needs_human` may also carry the `failure` that led to it, and a run an operator
+aborted is `failed` with the `escalation` it came from (resolution `aborted`).
+Recoverable conditions never become the status: they are listed in `recoveries`
+and the run goes on. Every time a person was involved is listed in `handoffs`.
 """
 
 from __future__ import annotations
@@ -13,6 +15,8 @@ from typing import Any, ClassVar, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from understudy.control.interventions import HandoffSummary
+
 Status = Literal["succeeded", "business_outcome", "rejected", "needs_human", "failed"]
 CommitState = Literal["not_attempted", "committed", "refused", "unknown"]
 """`refused`: the commit was sent and the app definitely said no (a business outcome
@@ -20,7 +24,12 @@ after the commit). `unknown`: it was sent, or may have been, and nothing definit
 came back. Money may have moved, so that goes to a human, never to a retry."""
 FailureCategory = Literal["app", "automation", "infra", "policy"]
 RejectionCode = Literal[
-    "invalid_input", "invalid_artifact", "not_approved", "approval_required", "policy"
+    "invalid_input",
+    "invalid_artifact",
+    "not_approved",
+    "approval_required",
+    "approval_denied",
+    "policy",
 ]
 
 
@@ -38,7 +47,8 @@ class BusinessOutcome(_Model):
 
 
 class Rejection(_Model):
-    """Refused before anything touched the UI."""
+    """Refused before anything touched the UI, or (`approval_denied`) refused by the
+    approver when the run reached its commit, before the commit was sent."""
 
     code: RejectionCode
     problems: list[str]
@@ -69,8 +79,9 @@ class Escalation(_Model):
     detail: str
     evidence: Evidence | None = None
     intervention_id: str | None = None
-    """Set once an intervention is opened for an operator (M6)."""
+    """The intervention an operator saw for it, when one was opened."""
     resolution: str | None = None
+    """What came of that intervention: aborted, timed_out, handoff_limit."""
 
 
 class Failure(_Model):
@@ -111,6 +122,10 @@ class StepTiming(_Model):
     step_id: str
     attempt: int
     duration_ms: int
+    """Time the step itself took, not counting a wait for an approver."""
+    waited_ms: int = 0
+    """Time the step waited for an approver. A takeover happens between attempts of
+    a step, not inside one; its duration is in handoff.json."""
 
 
 class Timings(_Model):
@@ -136,7 +151,10 @@ class ReplayResult(_Model):
     side_effects: SideEffectReport = Field(default_factory=SideEffectReport)
     recoveries: list[RecoveryEvent] = Field(default_factory=list)
     drift: list[DriftEvent] = Field(default_factory=list)
+    handoffs: list[HandoffSummary] = Field(default_factory=list)
     completed_by: Literal["automation", "human"] = "automation"
+    """`human` when an operator finished the task and replay verified it: the success
+    checkpoint held and the outputs were read from the page."""
     timings: Timings
 
     IDENTIFIERS: ClassVar[tuple[str, ...]] = (

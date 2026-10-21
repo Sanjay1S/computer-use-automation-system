@@ -400,3 +400,53 @@ def test_literal_query_values_stay_encoded() -> None:
     url = compiled(calls).capability.steps[0].url
 
     assert url == "{base_url}/search.htm?q=a%26b%20c&id={funding_account_id}"
+
+
+# --- a person's steps (M6) -------------------------------------------------------------------
+
+
+def test_a_persons_step_compiles_like_the_models_and_is_listed_for_review() -> None:
+    calls = Calls()
+    the_flow(calls)
+    calls.items[1] = calls.items[1].model_copy(update={"actor": "human"})
+
+    result = compiled(calls)
+
+    human = result.capability.provenance.human_steps
+    assert len(human) == 1
+    step = next(s for s in result.capability.steps if s.id == human[0])
+    assert (step.action, step.value) == ("select", ParamValue(param="account_type"))
+    assert any("recorded from a person's actions" in n for n in result.notes)
+    assert result.report.ok
+
+
+def test_a_persons_click_on_an_element_that_was_gone_is_a_note_not_a_failure() -> None:
+    calls = Calls()
+    the_flow(calls)
+    gone = element("button#x", tag="button", role="button").model_copy(
+        update={"description": "button 'Close account 13344'", "target": None}
+    )
+    calls.insert(2, "left_click", element=gone, actor="human", effect="input")
+
+    result = compiled(calls)
+
+    assert result.capability.provenance.human_steps == []
+    (note,) = [n for n in result.notes if "was not compiled" in n]
+    assert "13344" not in note  # page text stays out of review.txt
+    assert len(result.capability.steps) == 5
+
+
+def test_a_persons_commit_that_was_not_sent_is_not_compiled() -> None:
+    calls = Calls()
+    the_flow(calls)
+    blocked = calls.items[3].model_copy(
+        update={"actor": "human", "ok": False, "approved": False, "error": "not sent"}
+    )
+    calls.items.insert(3, blocked)
+    calls.items = [c.model_copy(update={"seq": i + 1}) for i, c in enumerate(calls.items)]
+    calls.seq = len(calls.items)
+
+    result = compiled(calls)
+
+    assert [s.effect for s in result.capability.steps].count("commit") == 1
+    assert result.capability.provenance.human_steps == []

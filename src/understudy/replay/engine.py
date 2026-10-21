@@ -9,6 +9,17 @@ registry with a per-run budget.
 The commit rule: a commit step is never retried or re-entered, and once its input
 may have reached the page, anything short of a definite success or a definite
 business answer is `needs_human` with `commit_state=unknown`.
+
+With a control plane and `escalate`, a `needs_human` stop becomes an intervention
+instead of a result: a takeover of the live session, or, when a commit's outcome is
+unknown, a request to verify it. The person's decision is then carried out:
+- resume: the paused step is looked at again. If its own checkpoint already holds,
+  the person did it and the run moves on; if it can run (ready, target present),
+  it runs; otherwise the run escalates again;
+- complete: the success checkpoint must hold and every output must be read from the
+  page, or the run escalates again (`completed_by=human` when it holds);
+- abort: `failed`, with the escalation and `resolution=aborted`.
+With interactive approval, the commit step waits for an approval in the console.
 """
 
 from __future__ import annotations
@@ -41,6 +52,9 @@ from understudy.artifact.schema import (
     Step,
 )
 from understudy.chaos import Chaos
+from understudy.control.handoff import Control, Handoffs
+from understudy.control.interventions import Intervention, Subject
+from understudy.control.plane import Lease
 from understudy.evidence.run import Actor, EventKind, RunContext
 from understudy.policy.gate import PolicyGate
 from understudy.profile import AppProfile, GlobalState, Interstitial
@@ -81,6 +95,9 @@ from understudy.surface.base import (
 from understudy.surface.web import WebSurface
 
 Verdict = Literal["continue", "succeed"]
+Handled = Literal["resumed", "completed"]
+CONSOLE = "console:"
+"""Prefix of `granted_by` on a grant minted from an approval in the console."""
 
 _ACT: dict[str, ActAction] = {
     "click": "click",
@@ -114,6 +131,23 @@ class _Escalate(_Stop):
     step_id: str | None
     detail: str
     cause: _Fail | None = None
+    intervention_id: str | None = None
+    resolution: str | None = None
+
+
+@dataclass(eq=False)
+class _Aborted(_Stop):
+    """An operator stopped the run."""
+
+    escalation: _Escalate
+    intervention_id: str
+
+
+@dataclass(eq=False)
+class _Rejected(_Stop):
+    """Refused before the commit was sent: the approver said no, or nobody answered."""
+
+    rejection: Rejection
 
 
 @dataclass(eq=False)
@@ -183,20 +217,40 @@ class Replayer:
         approval: pre.CommitApproval | None = None,
         allow_draft: bool = False,
         chaos: Chaos | None = None,
+        control: Control | None = None,
     ) -> ReplayResult:
-        """`open_page` is called only once preflight has passed."""
-        return _Execution(self, dict(inputs), chaos).run(open_page, approval, allow_draft)
+        """`open_page` is called only once preflight has passed. `control` involves
+        people: interactive approval of the commit, and handoffs instead of
+        `needs_human` results when it escalates."""
+        return _Execution(self, dict(inputs), chaos, control).run(open_page, approval, allow_draft)
 
 
 # --- one run ------------------------------------------------------------------------
 
 
 class _Execution:
-    def __init__(self, replayer: Replayer, inputs: dict[str, str], chaos: Chaos | None) -> None:
+    def __init__(
+        self,
+        replayer: Replayer,
+        inputs: dict[str, str],
+        chaos: Chaos | None,
+        control: Control | None = None,
+    ) -> None:
         self.r = replayer
         self.cap = replayer.capability
         self.params = inputs
         self.chaos = chaos
+        self.control = control
+        self.handoffs: Handoffs | None = None
+        self.approval: pre.CommitApproval | None = None
+        self.completed_by: Literal["automation", "human"] = "automation"
+        self._resuming: str | None = None
+        """The step a person handed back at, to be looked at again before it runs."""
+        self._held_by_person = False
+        """A person held the session before the commit: the inputs already entered are
+        checked again before it, since the commit is approved for those inputs only."""
+        self._foreign_checked = 0
+        """Input from outside replay already accounted for by a check of the inputs."""
         self.started = datetime.now(UTC)
         self.artifact_hash = hashing.content_hash(self.cap)
         self.sensitivity: dict[str, Sensitivity] = {i.name: i.sensitivity for i in self.cap.inputs}
@@ -242,6 +296,10 @@ class _Execution:
         assert self.surface is not None
         return self.surface
 
+    @property
+    def lease(self) -> Lease | None:
+        return self.handoffs.lease if self.handoffs else None
+
     # --- top level ---------------------------------------------------------------------
 
     def run(
@@ -250,15 +308,21 @@ class _Execution:
         approval: pre.CommitApproval | None,
         allow_draft: bool,
     ) -> ReplayResult:
-        rejection = self.r.preflight(
+        interactive = bool(self.control and self.control.interactive_approval)
+        rejection = pre.preflight(
+            self.cap,
             self.params,
+            gate=self.r.gate,
+            profile=self.r.profile,
             approval=approval,
             allow_draft=allow_draft,
             fault_injection=bool(self.chaos and self.chaos.faults),
+            interactive_approval=interactive,
         )
         if rejection is not None:
             self._event("policy", ok=False, error="; ".join(rejection.problems))
             return self._finish("rejected", rejection=rejection)
+        self.approval = approval
         try:
             page = open_page()
             if self.chaos:
@@ -274,10 +338,21 @@ class _Execution:
                     if "dismiss_interstitial" in self.cap.recovery.allowed
                     else []
                 ),
+                control=self.control.plane if self.control else None,
             )
+            if self.control:
+                self.handoffs = Handoffs(
+                    self.control,
+                    self.run_ctx,
+                    self.surface,
+                    automation="engine",
+                    subject=Subject(kind="capability", id=self.cap.id, version=self.cap.version),
+                    artifact_hash=self.artifact_hash,
+                    masks=self.r.profile.screenshot_masks,
+                    params=self.params,
+                )
             self._login()
-            self._steps()
-            self._verify()
+            self._drive()
         except _Stop as stop:
             return self._stopped(stop)
         except SurfaceError as error:
@@ -300,12 +375,38 @@ class _Execution:
             self.commit_state = "committed"
         return self._finish("succeeded", outputs=dict(self.outputs))
 
+    def _drive(self) -> None:
+        """Steps, then verification. An escalation goes to a person when this run may
+        hand off; what they decide either ends the run or lets it carry on."""
+        pending: _Stop | None = None
+        while True:
+            if pending is None:
+                try:
+                    self._steps()
+                    self._verify()
+                    return
+                except (_Stop, SurfaceError) as raised:
+                    pending = self._as_stop(raised)
+            stop, pending = pending, None
+            if not isinstance(stop, _Escalate) or self.handoffs is None:
+                raise stop
+            if not self.handoffs.can_hand_off:
+                if self.handoffs.control.escalate:
+                    stop.resolution = "handoff_limit"
+                raise stop
+            handled = self._hand_off(stop)
+            if isinstance(handled, _Stop):
+                pending = handled
+            elif handled == "completed":
+                return
+
     def _steps(self) -> None:
         steps = self.cap.steps
-        self.index = 0
         while self.index < len(steps):
             step = steps[self.index]
             self.current = step
+            if self.handoffs:
+                self.handoffs.poll()
             try:
                 verdict = self._step(step)
             except _Retry:
@@ -321,36 +422,56 @@ class _Execution:
     def _step(self, step: Step) -> Verdict:
         surface = self.page_surface
         started = time.monotonic()
+        waited = self.handoffs.waited_s if self.handoffs else 0.0
         attempt = self.attempts.get(step.id, 0)
         if self.chaos:
             fired = self.chaos.before_step(step, surface.page, self.params)
             if fired:
                 self._event("control", actor="system", step_id=step.id, injected=fired)
         try:
-            if step.action == "navigate":
-                self._navigate(step)
-                verdict = self._race(step)
-            else:
-                resolution = self._await_target(step)
-                if step.action == "extract":
-                    self._extract(step, resolution)
-                    verdict = self._race(step)
-                elif step.action == "wait_for":
-                    verdict = self._race(step)
-                elif step.effect == "commit":
-                    with surface.commit_window():
-                        self._check_not_vacuous(step)
-                        self.commit_step = step.id
-                        self._act(step, resolution)
-                        verdict = self._race(step)
-                else:
-                    self._act(step, resolution)
-                    verdict = self._race(step)
+            verdict = None
+            if self._resuming == step.id:
+                self._resuming = None
+                verdict = self._after_resume(step)
+            if verdict is None:
+                verdict = self._run(step)
         finally:
-            elapsed = int((time.monotonic() - started) * 1000)
-            self.timings.append(StepTiming(step_id=step.id, attempt=attempt, duration_ms=elapsed))
+            waited_ms = int(((self.handoffs.waited_s if self.handoffs else 0.0) - waited) * 1000)
+            elapsed = int((time.monotonic() - started) * 1000) - waited_ms
+            self.timings.append(
+                StepTiming(
+                    step_id=step.id, attempt=attempt, duration_ms=elapsed, waited_ms=waited_ms
+                )
+            )
         self._screenshot(step.id)
         return verdict
+
+    def _run(self, step: Step) -> Verdict:
+        surface = self.page_surface
+        if step.action == "navigate":
+            self._navigate(step)
+            return self._race(step)
+        if step.effect == "commit":
+            self._check_not_vacuous(step)
+            # Before the page is read: a long wait for an approver is followed by a
+            # fresh look (an expired session, an interstitial) and a fresh resolution.
+            self._approve(step)
+        resolution = self._await_target(step)
+        if step.action == "extract":
+            self._extract(step, resolution)
+            return self._race(step)
+        if step.action == "wait_for":
+            return self._race(step)
+        if step.effect != "commit":
+            self._act(step, resolution)
+            return self._race(step)
+        if self._inputs_in_doubt():
+            self._reverify_inputs(step)
+        with surface.commit_window():
+            self._check_not_vacuous(step)
+            self.commit_step = step.id
+            self._act(step, resolution)
+            return self._race(step)
 
     # --- the phases of a step ------------------------------------------------------------
 
@@ -358,7 +479,7 @@ class _Execution:
         url = pre.expand_url(step.url or "", self.r.tenant.base_url, self.params)
         started = time.monotonic()
         try:
-            status = self.page_surface.navigate(url, timeout_ms=step.timeout_ms)
+            status = self.page_surface.navigate(url, timeout_ms=step.timeout_ms, lease=self.lease)
         except ActionTimeout as error:
             self._event_act(step, started, ok=False, error=str(error))
             self._transient(step, f"the page did not load: {error}", "infra", "timeout")
@@ -422,6 +543,7 @@ class _Execution:
                     fingerprint=step.target.fingerprint,
                     params=self.params,
                     timeout_ms=step.timeout_ms,
+                    lease=self.lease,
                 )
             except SurfaceError as error:
                 if commit and error.dispatched:
@@ -671,6 +793,7 @@ class _Execution:
             resolution.element,
             fingerprint=interstitial.dismiss.fingerprint,
             params=self.params,
+            lease=self.lease,
         )
         self._recover(event)
         # Wait for it to go before looking again: one that fades out would otherwise
@@ -719,6 +842,256 @@ class _Execution:
                 "it already holds, so it could not tell whether this run committed",
             )
 
+    # --- people ---------------------------------------------------------------------------
+
+    def _approve(self, step: Step) -> None:
+        """A grant from the command line covers the commit already. Otherwise, with
+        interactive approval, a person approves it now; the grant they give is minted
+        and checked exactly as one from the command line."""
+        if self.approval is not None or self.handoffs is None:
+            return
+        handoffs = self.handoffs
+        redactor = self.run_ctx.redactor
+        inputs = ", ".join(
+            f"{name}={redactor.value(value, self.sensitivity.get(name, 'pii'))}"
+            for name, value in self.params.items()
+        )
+        detail = (
+            f"{step.intent.strip()}. Inputs: {inputs}. The grant binds to "
+            f"{self.cap.id}@{self.cap.version}, these inputs and tenant {self.r.tenant.id}."
+        )
+        with handoffs.opened(
+            "approval", "commit_approval", detail, step_id=step.id, intent=step.intent
+        ) as intervention:
+            decision = handoffs.wait(intervention)
+            if decision is None:
+                handoffs.close(intervention, "timed_out", to="AGENT")
+                raise _Rejected(
+                    Rejection(
+                        code="approval_required",
+                        problems=[f"nobody approved the commit within {self.control_wait_s:g} s"],
+                    )
+                )
+            if decision.action != "approve":
+                handoffs.close(intervention, "denied", to="AGENT")
+                raise _Rejected(
+                    Rejection(
+                        code="approval_denied",
+                        problems=[f"{decision.operator} denied the commit at step {step.id!r}"],
+                    )
+                )
+            granted = pre.grant(
+                self.cap, self.params, self.r.tenant.id, f"{CONSOLE}{decision.operator}"
+            )
+            problems = pre.approval_problems(
+                self.cap, self.artifact_hash, self.params, self.r.tenant.id, granted
+            )
+            if problems:  # the artifact changed in memory since the run started
+                handoffs.close(intervention, "approval_invalid", to="AGENT")
+                raise _Rejected(Rejection(code="approval_required", problems=problems))
+            handoffs.close(intervention, "approved", to="AGENT")
+        self.approval = granted
+
+    @property
+    def control_wait_s(self) -> float:
+        return self.control.max_wait_s if self.control else 0.0
+
+    def _hand_off(self, stop: _Escalate) -> Handled | _Stop:
+        """One intervention for an escalation. Returns how the run carries on, or the
+        next escalation; an abort or a wait that runs out ends the run."""
+        assert self.handoffs is not None
+        handoffs = self.handoffs
+        step = next((s for s in self.cap.steps if s.id == stop.step_id), None)
+        verify = self.commit_state == "pending"
+        with handoffs.opened(
+            "verify_commit" if verify else "takeover",
+            stop.reason,
+            stop.detail,
+            step_id=stop.step_id,
+            intent=step.intent if step else None,
+            resume_points=[] if verify else self._resume_points(stop),
+        ) as intervention:
+            stop.intervention_id = intervention.id
+            decision = handoffs.wait(intervention)
+            if decision is None:
+                handoffs.close(intervention, "timed_out", to="AGENT")
+                stop.resolution = "timed_out"
+                raise stop
+            if decision.action == "abort":
+                handoffs.close(intervention, "aborted", to="ABORTED")
+                stop.resolution = "aborted"
+                raise _Aborted(stop, intervention.id)
+            if decision.action == "complete":
+                problem = self._completion_problem()
+                if problem is None:
+                    handoffs.close(intervention, "completed", to="COMPLETED_BY_HUMAN")
+                    self.completed_by = "human"
+                    if self.commit_state == "pending":
+                        self.commit_state = "committed"  # the success checkpoint holds after it
+                    self.current = None
+                    return "completed"
+                handoffs.close(intervention, "completion_not_verified", to="AGENT")
+                return _Escalate("completion_not_verified", stop.step_id, problem)
+            return self._resume(stop, intervention, decision.resume_from)
+
+    def _resume(
+        self, stop: _Escalate, intervention: Intervention, resume_from: str | None
+    ) -> Handled | _Stop:
+        assert self.handoffs is not None
+        ids = [s.id for s in self.cap.steps]
+        target = resume_from or stop.step_id
+        index = ids.index(target) if target in ids else self.index
+        # The person has seen the dialog the surface answered; it stops blocking.
+        self.page_surface.acknowledge_dialogs()
+        self.handoffs.close(
+            intervention, f"resumed from {ids[index]}" if resume_from else "resumed", to="AGENT"
+        )
+        self.index = index
+        self._resuming = ids[index]
+        if self.commit_state == "not_attempted":
+            self._held_by_person = True
+            if self.approval is not None and self.approval.granted_by.startswith(CONSOLE):
+                # The approver saw the page before the person held it: ask again. A
+                # grant from the caller (--approve) is for the invocation and stands.
+                self.approval = None
+                self._event("control", ok=True, approval="withdrawn_after_handoff")
+        return "resumed"
+
+    def _resume_points(self, stop: _Escalate) -> list[str]:
+        """The paused step, then (before any commit) the re-entry points before it,
+        nearest first. Never a step at or before a commit that may have happened."""
+        steps = self.cap.steps
+        ids = [s.id for s in steps]
+        if stop.step_id not in ids:
+            return []
+        paused = ids.index(stop.step_id)
+        points = [stop.step_id]
+        if self.commit_state == "not_attempted":
+            points += [s.id for s in reversed(steps[:paused]) if s.reentry_point]
+        return points
+
+    def _after_resume(self, step: Step) -> Verdict | None:
+        """The look at a handed-back step. A verdict when the person did the step (its
+        own checkpoint holds); None to run it; an escalation when it cannot run."""
+        if step.action == "navigate":
+            return None  # it loads the page again, which also ends any policy taint
+        surface = self.page_surface
+        if surface.off_policy is not None:  # the person's input took it there
+            raise _Escalate(
+                "resume_state_mismatch",
+                step.id,
+                f"after the hand-back the page is off policy ({surface.off_policy.reason}); "
+                "resume from a re-entry point, which loads the page again",
+            )
+        if step.action in ("extract", "wait_for") or step.effect == "commit":
+            return None  # an extract reads, and only replay commits
+        expectation = self._look(step, step.expect) if step.expect else None
+        if expectation is not None:
+            self._event(
+                "control",
+                step_id=step.id,
+                ok=True,
+                after_resume="done_by_person",
+                matched=expectation.description,
+            )
+            return self._apply(step, expectation.then, expectation.description)
+        ready = step.wait_before is None or surface.probe(step.wait_before, self.params)
+        present = (
+            ready
+            and step.target is not None
+            and surface.resolve(step.target, self.params).element is not None
+        )
+        if not present:
+            why = "its readiness check does not hold" if not ready else "its target is not there"
+            raise _Escalate(
+                "resume_state_mismatch",
+                step.id,
+                f"after the hand-back the step cannot run ({why}) and none of its "
+                "expectations hold",
+            )
+        self._event("control", step_id=step.id, ok=True, after_resume="runs_again")
+        return None
+
+    def _inputs_in_doubt(self) -> bool:
+        """Someone other than replay gave the page input before its commit: a person
+        who held the session, or anyone at all while replay or an approver held it."""
+        if self.handoffs is None:
+            return False
+        self.handoffs.poll()
+        return self._held_by_person or self.handoffs.foreign_inputs > self._foreign_checked
+
+    def _reverify_inputs(self, commit: Step) -> None:
+        """A person held the session after inputs were entered and may have changed
+        them, while the commit (and its approval) is for the inputs given. Every input
+        step since the re-entry point must still show its own checkpoint, or the flow
+        restarts there and replay enters each value again."""
+        self._held_by_person = False
+        if self.handoffs is not None:
+            self._foreign_checked = self.handoffs.foreign_inputs
+        steps = self.cap.steps
+        entry = reentry_index(steps, self.index)
+        surface = self.page_surface
+        unverified = [
+            s.id
+            for s in steps[(entry or 0) : self.index]
+            if s.effect == "input"
+            and not any(
+                e.then.do == "continue" and surface.probe(e.when, self.params) for e in s.expect
+            )
+        ]
+        if not unverified:
+            self._event("control", step_id=commit.id, ok=True, inputs_after_handoff="verified")
+            return
+        if entry is None:
+            raise _Escalate(
+                "inputs_not_verified",
+                commit.id,
+                f"after a person held the session, steps {', '.join(unverified)} no longer "
+                "show the inputs given, and there is no re-entry point to enter them again",
+            )
+        self._event(
+            "control",
+            step_id=commit.id,
+            ok=True,
+            inputs_after_handoff="re_entered",
+            unverified=unverified,
+            restarted_from=steps[entry].id,
+        )
+        raise _Restart(entry)
+
+    def _completion_problem(self) -> str | None:
+        """What stops a person's "complete" from being verified, or None: the success
+        checkpoint holds and every output was read from the page."""
+        if pre.commits(self.cap) and self.commit_state == "not_attempted":
+            return (
+                "this run has not sent its commit, and a person cannot commit for it; "
+                "resume so that replay runs the commit step"
+            )
+        surface = self.page_surface
+        surface.acknowledge_dialogs()
+        if not surface.probe(self.cap.success.signature, self.params):
+            return f"the success checkpoint does not hold ({self.cap.success.description})"
+        for step in self.cap.steps:
+            if step.extract is None or step.extract.output in self.outputs:
+                continue
+            assert step.target is not None
+            spec = next(o for o in self.cap.outputs if o.name == step.extract.output)
+            resolution = surface.resolve(step.target, self.params)
+            if resolution.element is None:
+                return f"{spec.name} is not on the page ({step.target.description})"
+            value = _typed(
+                spec, _parse(surface.read(resolution.element, step.extract), step.extract)
+            )
+            if value is None:
+                return f"the text shown for {spec.name} is not a valid {spec.type}"
+            self.outputs[spec.name] = value
+            self.run_ctx.know({str(value): spec.sensitivity})
+            self._event_act(step, time.monotonic(), resolution, str(value), spec.sensitivity, True)
+        missing = [o.name for o in self.cap.outputs if o.name not in self.outputs]
+        if missing:
+            return f"outputs {', '.join(missing)} were never read"
+        return None
+
     @staticmethod
     def _absent_is_outcome(step: Step, resolution: Resolution[PwLocator]) -> bool:
         """A param-bound target that is missing once the step's structural guard holds
@@ -735,7 +1108,7 @@ class _Execution:
     def _login(self) -> None:
         started = time.monotonic()
         with self.chaos.paused() if self.chaos else contextlib.nullcontext():
-            self.session.login(self.page_surface, poll_ms=self.r.poll_ms)
+            self.session.login(self.page_surface, poll_ms=self.r.poll_ms, lease=self.lease)
         self._event(
             "act",
             actor="system",
@@ -746,17 +1119,35 @@ class _Execution:
 
     # --- ending a run ---------------------------------------------------------------------
 
+    def _as_stop(self, raised: _Stop | SurfaceError) -> _Stop:
+        stop = raised if isinstance(raised, _Stop) else self._from_surface(raised, self._step_id())
+        return self._commit_rule(stop)
+
+    def _commit_rule(self, stop: _Stop) -> _Stop:
+        """Once the commit may have reached the app, a failure is an unknown outcome."""
+        if self.commit_state == "pending" and isinstance(stop, _Fail):
+            return _Escalate(
+                "commit_outcome_unknown", stop.step_id, f"{stop.code}: {stop.observed}", cause=stop
+            )
+        return stop
+
     def _stopped(self, stop: _Stop) -> ReplayResult:
         """Applies the commit rule, then builds the result."""
+        stop = self._commit_rule(stop)
         if self.commit_state == "pending":
-            if isinstance(stop, _Fail):
-                stop = _Escalate(
-                    "commit_outcome_unknown",
-                    stop.step_id,
-                    f"{stop.code}: {stop.observed}",
-                    cause=stop,
-                )
             self.commit_state = "refused" if isinstance(stop, _Business) else "unknown"
+        if isinstance(stop, _Rejected):
+            self._event("policy", ok=False, error="; ".join(stop.rejection.problems))
+            return self._finish("rejected", rejection=stop.rejection)
+        if isinstance(stop, _Aborted):
+            escalation = stop.escalation
+            evidence = self._bundle(escalation)
+            self._event("escalation", step_id=escalation.step_id, reason="aborted", ok=False)
+            return self._finish(
+                "failed",
+                escalation=self._escalation(escalation, evidence),
+                failure=_failure(escalation.cause, evidence) if escalation.cause else None,
+            )
         if isinstance(stop, _Business):
             spec = next((o for o in self.cap.outcomes if o.code == stop.code), None)
             outcome = BusinessOutcome(
@@ -768,13 +1159,23 @@ class _Execution:
         assert isinstance(stop, _Fail | _Escalate)
         evidence = self._bundle(stop)
         if isinstance(stop, _Escalate):
-            escalation = Escalation(
-                reason=stop.reason, step_id=stop.step_id, detail=stop.detail, evidence=evidence
-            )
             failure = _failure(stop.cause, evidence) if stop.cause else None
             self._event("escalation", step_id=stop.step_id, reason=stop.reason, ok=False)
-            return self._finish("needs_human", escalation=escalation, failure=failure)
+            return self._finish(
+                "needs_human", escalation=self._escalation(stop, evidence), failure=failure
+            )
         return self._finish("failed", failure=_failure(stop, evidence))
+
+    @staticmethod
+    def _escalation(stop: _Escalate, evidence: Evidence | None) -> Escalation:
+        return Escalation(
+            reason=stop.reason,
+            step_id=stop.step_id,
+            detail=stop.detail,
+            evidence=evidence,
+            intervention_id=stop.intervention_id,
+            resolution=stop.resolution,
+        )
 
     def _from_surface(self, error: SurfaceError, step_id: str | None) -> _Stop:
         message = str(error)
@@ -825,6 +1226,8 @@ class _Execution:
             ),
             recoveries=list(self.ledger.events),
             drift=list(self.drift),
+            handoffs=self.handoffs.summaries() if self.handoffs else [],
+            completed_by=self.completed_by,
             timings=Timings(
                 started_at=self.started,
                 finished_at=finished,

@@ -21,6 +21,7 @@ from __future__ import annotations
 import contextlib
 import re
 import time
+from collections import deque
 from collections.abc import Iterator, Mapping, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -42,6 +43,7 @@ from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 
 from understudy.artifact import signatures as sig
 from understudy.artifact.schema import Extraction, Fingerprint, Target
+from understudy.control.plane import ControlPlane, Lease
 from understudy.evidence.run import Event
 from understudy.policy.gate import REPLAY_MEMBER, Decision, Mode, PolicyGate
 from understudy.redaction.redactor import Redactor
@@ -180,6 +182,7 @@ class WebSurface:
         mode: Mode,
         run_id: str = "adhoc",
         dialog_rules: Sequence[tuple[str | None, DialogAnswer]] = (),
+        control: ControlPlane | None = None,
     ) -> None:
         """Install any other route handlers (fixtures, fault injection) before
         constructing this. Playwright runs page routes before context routes, and
@@ -192,8 +195,15 @@ class WebSurface:
         freeze whatever call was in flight. A dialog matching a `dialog_rules` entry
         (message regex, or None for any) gets that answer; any other is dismissed,
         the non-committal answer, and then blocks driving the page until someone
-        acknowledges it."""
+        acknowledges it.
+
+        With a `control` plane, every actuation (navigate, act, hover, scroll) must
+        carry the current lease, or it raises ControlLost before touching the page."""
         self.page = page
+        self.control = control
+        self._acting: deque[tuple[float, float]] = deque(maxlen=500)
+        """Wall-clock windows in which automation was delivering input, so the human
+        recorder can tell automation's own events from a person's."""
         self.gate = gate
         self.mode: Mode = mode
         self._provider = 0
@@ -277,7 +287,10 @@ class WebSurface:
 
     # --- actions -----------------------------------------------------------------
 
-    def navigate(self, url: str, *, timeout_ms: int = 30_000) -> int | None:
+    def navigate(
+        self, url: str, *, timeout_ms: int = 30_000, lease: Lease | None = None
+    ) -> int | None:
+        self._fence(lease)
         decision = self.gate.check_url(url)
         if not decision.allowed:
             raise PolicyBlocked(decision.reason, decision.rule)
@@ -304,6 +317,7 @@ class WebSurface:
         fingerprint: Fingerprint | None = None,
         params: Mapping[str, str] | None = None,
         timeout_ms: int = 5_000,
+        lease: Lease | None = None,
     ) -> None:
         """Acts on the exact element whose facts were checked: the locator is pinned
         to a handle first, so a re-render between resolution and action fails
@@ -313,6 +327,7 @@ class WebSurface:
         An element covered by something else (a modal, an overlay) is refused for
         every action, not only clicks. An error raised by the browser call itself has
         `dispatched` set: the input may have reached the page."""
+        self._fence(lease)
         self._ready()
         try:
             handle = element.element_handle(timeout=timeout_ms)
@@ -342,6 +357,7 @@ class WebSurface:
         if cover:
             raise ActionBlocked(f"{cover} covers the target and would receive the input")
         self._enforce(decision)
+        started = time.time()
         try:
             if action == "click":
                 handle.click(timeout=timeout_ms)
@@ -359,6 +375,13 @@ class WebSurface:
             mapped = _surface_error(error)
             mapped.dispatched = True
             raise mapped from None
+        finally:
+            self._acting.append((started, time.time()))
+
+    def automation_at(self, at: float, *, slack_s: float = 0.5) -> bool:
+        """Whether automation was delivering input at this wall-clock time. The slack
+        covers events the page reports just after the call returns."""
+        return any(start - 0.05 <= at <= end + slack_s for start, end in self._acting)
 
     def read(self, element: PwLocator, extraction: Extraction) -> str:
         """The raw string. Parsing and pattern checks belong to the caller."""
@@ -420,21 +443,30 @@ class WebSurface:
         except ActionFailed:
             return None
 
-    def hover(self, element: PwLocator, *, timeout_ms: int = 5_000) -> None:
+    def hover(
+        self, element: PwLocator, *, timeout_ms: int = 5_000, lease: Lease | None = None
+    ) -> None:
+        self._fence(lease)
         self._ready()
         try:
             element.hover(timeout=timeout_ms)
         except PlaywrightError as error:
             raise _surface_error(error) from None
 
-    def scroll_into_view(self, element: PwLocator, *, timeout_ms: int = 5_000) -> None:
+    def scroll_into_view(
+        self, element: PwLocator, *, timeout_ms: int = 5_000, lease: Lease | None = None
+    ) -> None:
+        self._fence(lease)
         self._ready()
         try:
             element.scroll_into_view_if_needed(timeout=timeout_ms)
         except PlaywrightError as error:
             raise _surface_error(error) from None
 
-    def wheel(self, x: float, y: float, dx: float, dy: float) -> None:
+    def wheel(
+        self, x: float, y: float, dx: float, dy: float, *, lease: Lease | None = None
+    ) -> None:
+        self._fence(lease)
         self._ready()
         try:
             self.page.mouse.move(x, y)
@@ -625,6 +657,11 @@ class WebSurface:
     def violations(self) -> list[PolicyViolation]:
         return list(self._violations)
 
+    @property
+    def off_policy(self) -> PolicyViolation | None:
+        """The violation that took the page off policy, until the next navigation."""
+        return self._tainted
+
     def screenshot(self, path: Path, extra_masks: Sequence[str] = ()) -> Path:
         return capture.screenshot(self.page, path, extra_masks)
 
@@ -658,6 +695,10 @@ class WebSurface:
         )
 
     # --- internals -----------------------------------------------------------------
+
+    def _fence(self, lease: Lease | None) -> None:
+        if self.control is not None:
+            self.control.check(lease)
 
     def _enforce(self, decision: Decision, *, spend: bool = True) -> None:
         """`spend=False` only checks, so a refusal comes before anything touches the page
@@ -806,8 +847,15 @@ class WebSurface:
             return
 
     def _on_dialog(self, dialog: Dialog) -> None:
-        rule = next(
-            (a for r, a in self._dialog_rules if r is None or r.search(dialog.message)), None
+        # While a person holds the session no rule answers for them: only the
+        # non-committal default, which keeps the page readable.
+        held = self.control is not None and self.control.state == "HUMAN"
+        rule = (
+            None
+            if held
+            else next(
+                (a for r, a in self._dialog_rules if r is None or r.search(dialog.message)), None
+            )
         )
         answer: DialogAnswer = rule or "dismiss"
         with contextlib.suppress(PlaywrightError):  # already answered, or its page is gone

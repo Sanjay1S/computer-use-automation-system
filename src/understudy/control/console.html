@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Operator console</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --card: #ffffff; --ink: #1d2330; --muted: #5d6676; --line: #d9dee6;
+    --accent: #2457c5; --warn: #9a5b00; --warn-bg: #fff4de; --bad: #b42318; --ok: #1f7a3f;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #12151b; --card: #1b2029; --ink: #e6e9ef; --muted: #9aa4b5; --line: #2c3340;
+      --accent: #7ea2ff; --warn: #f0b75e; --warn-bg: #2d2416; --bad: #ff8a80; --ok: #6fd391;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  header { padding: 16px; border-bottom: 1px solid var(--line); background: var(--card); }
+  header h1 { margin: 0 0 4px; font-size: 18px; }
+  main { max-width: 1100px; margin: 0 auto; padding: 16px; }
+  .muted { color: var(--muted); }
+  .row { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; }
+  .badge { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px;
+           border: 1px solid var(--line); text-transform: uppercase; letter-spacing: .03em; }
+  .badge.state { border-color: var(--accent); color: var(--accent); }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+          padding: 16px; margin: 0 0 16px; }
+  .card.closed { opacity: .72; }
+  .card h2 { margin: 0 0 6px; font-size: 16px; }
+  .grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+  @media (max-width: 760px) { .grid { grid-template-columns: 1fr; } }
+  img { max-width: 100%; border: 1px solid var(--line); border-radius: 6px; display: block; }
+  dl { margin: 0; display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 2px 12px; }
+  dt { color: var(--muted); } dd { margin: 0; overflow-wrap: anywhere; }
+  .hint { background: var(--warn-bg); color: var(--warn); padding: 8px 10px; border-radius: 6px;
+          margin: 10px 0; }
+  textarea, input, select { font: inherit; color: inherit; background: var(--bg);
+           border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; }
+  textarea { width: 100%; min-height: 56px; }
+  button { font: inherit; padding: 6px 14px; border-radius: 6px; cursor: pointer;
+           border: 1px solid var(--accent); background: var(--accent); color: #fff; }
+  button.secondary { background: transparent; color: var(--accent); }
+  button.danger { border-color: var(--bad); background: transparent; color: var(--bad); }
+  .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  details { margin-top: 10px; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  td, th { border-bottom: 1px solid var(--line); padding: 3px 6px; text-align: left; vertical-align: top; }
+  .error { color: var(--bad); min-height: 1.2em; }
+  .empty { padding: 32px; text-align: center; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Operator console</h1>
+  <div class="row muted">
+    <span>run <code id="run">-</code></span>
+    <span>control <span id="state" class="badge state">-</span></span>
+    <span id="lease"></span>
+    <label>your name <input id="operator" autocomplete="name" size="18"></label>
+  </div>
+</header>
+<main>
+  <div id="error" class="error"></div>
+  <div id="list"><p class="empty muted">Loading…</p></div>
+</main>
+<script>
+(() => {
+  const HINTS = {
+    approval: "Approve to let automation run this commit once, with exactly these inputs. Deny to stop before it.",
+    takeover: "Claim to take the live browser window. Commits stay blocked while you hold it: resume and automation runs the commit step itself. Complete only when the page shows the task's success state.",
+    verify_commit: "The commit may have gone through. Check the app; never submit it again. Complete if the page shows the success state; otherwise abort and note what you found.",
+  };
+  const $ = (id) => document.getElementById(id);
+  const operatorBox = $("operator");
+  try { operatorBox.value = localStorage.getItem("understudy.operator") || ""; } catch (e) {}
+  operatorBox.addEventListener("change", () => {
+    try { localStorage.setItem("understudy.operator", operatorBox.value); } catch (e) {}
+  });
+
+  const el = (tag, attrs = {}, ...children) => {
+    const node = document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs)) {
+      if (k === "class") node.className = v; else if (k.startsWith("on")) node.addEventListener(k.slice(2), v);
+      else node.setAttribute(k, v);
+    }
+    for (const child of children.flat()) {
+      if (child !== null && child !== undefined) node.append(child.nodeType ? child : String(child));
+    }
+    return node;
+  };
+
+  const drafts = {};
+  let last = "";
+
+  // As the server stores it: inner runs of whitespace collapsed.
+  const myName = () => operatorBox.value.replace(/\s+/g, " ").trim();
+
+  async function act(id, action) {
+    const operator = myName();
+    if (!operator) { $("error").textContent = "Enter your name first."; operatorBox.focus(); return; }
+    const body = { operator, note: (drafts[id] && drafts[id].note) || null,
+                   resume_from: (drafts[id] && drafts[id].from) || null };
+    const response = await fetch(`api/interventions/${id}/${action}`, {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
+    });
+    const answer = await response.json().catch(() => ({}));
+    $("error").textContent = response.ok ? "" : (answer.error || `failed (${response.status})`);
+    if (response.ok) delete drafts[id];
+    last = ""; refresh();
+  }
+
+  function buttons(iv, me) {
+    const list = [];
+    const can = (a) => iv.allowed.includes(a);
+    if (iv.status === "open") {
+      if (can("claim")) list.push(["claim", "Claim the session", ""]);
+      if (can("approve")) list.push(["approve", "Approve", ""]);
+      if (can("deny")) list.push(["deny", "Deny", "danger"]);
+      if (can("abort")) list.push(["abort", "Abort", "danger"]);
+    } else if (iv.status === "claimed" && iv.claimed_by === me) {
+      if (can("resume")) list.push(["resume", "Resume automation", ""]);
+      if (can("complete")) list.push(["complete", "Complete", "secondary"]);
+      if (can("abort")) list.push(["abort", "Abort", "danger"]);
+    }
+    return list.map(([a, label, cls]) => el("button", { class: cls, onclick: () => act(iv.id, a) }, label));
+  }
+
+  function card(iv, me) {
+    const live = iv.status !== "closed" && iv.live_screenshot;
+    const shot = (iv.screenshot || iv.live_screenshot) ? el("img", {
+      alt: "masked screenshot of the page",
+      src: `api/interventions/${iv.id}/screenshot${live ? "?live=1&t=" + Date.now() : ""}`,
+    }) : el("p", { class: "muted" }, "No screenshot.");
+    const facts = el("dl", {},
+      el("dt", {}, "reason"), el("dd", {}, iv.reason),
+      el("dt", {}, "step"), el("dd", {}, iv.step_id ? `${iv.step_id}: ${iv.intent || ""}` : "-"),
+      el("dt", {}, "detail"), el("dd", {}, iv.detail),
+      el("dt", {}, "page"), el("dd", {}, iv.url || "-"),
+      el("dt", {}, "for"), el("dd", {}, `${iv.subject.kind} ${iv.subject.id}${iv.subject.version ? "@" + iv.subject.version : ""}`),
+      el("dt", {}, "opened"), el("dd", {}, new Date(iv.opened_at).toLocaleTimeString()),
+      iv.claimed_by ? [el("dt", {}, "held by"), el("dd", {}, iv.claimed_by)] : null,
+      iv.decision ? [el("dt", {}, "decision"), el("dd", {}, `${iv.decision.action} by ${iv.decision.operator}${iv.decision.note ? ": " + iv.decision.note : ""}`)] : null,
+      iv.resolution ? [el("dt", {}, "resolution"), el("dd", {}, iv.resolution)] : null,
+    );
+    const draft = drafts[iv.id] || (drafts[iv.id] = { note: "", from: "" });
+    const controls = [];
+    const actionButtons = buttons(iv, me);
+    if (actionButtons.length) {
+      controls.push(el("textarea", { placeholder: "Note (optional): what you did or found",
+        oninput: (e) => { draft.note = e.target.value; } }));
+      controls[0].value = draft.note;
+      if (iv.status === "claimed" && iv.resume_points.length > 1) {
+        const pick = el("select", { onchange: (e) => { draft.from = e.target.value; } },
+          iv.resume_points.map((p, i) => el("option", { value: i === 0 ? "" : p }, i === 0 ? `the paused step (${p})` : p)));
+        pick.value = draft.from;
+        controls.push(el("label", {}, "resume from ", pick));
+      }
+      controls.push(el("div", { class: "actions" }, actionButtons));
+    } else if (iv.status === "claimed") {
+      controls.push(el("p", { class: "muted" }, `${iv.claimed_by} holds this session.`));
+    }
+    const events = el("details", {}, el("summary", {}, `Last ${iv.recent_events.length} events`),
+      el("table", {}, el("tr", {}, ["seq", "actor", "kind", "step", "what", "ok", "error"].map((h) => el("th", {}, h))),
+        iv.recent_events.map((e) => el("tr", {},
+          el("td", {}, e.seq), el("td", {}, e.actor), el("td", {}, e.kind), el("td", {}, e.step_id || ""),
+          el("td", {}, e.member || e.action || ""), el("td", {}, e.ok === undefined ? "" : (e.ok ? "yes" : "no")),
+          el("td", {}, e.error || "")))));
+    return el("section", { class: "card" + (iv.status === "closed" ? " closed" : "") },
+      el("div", { class: "row" }, el("h2", {}, iv.kind.replace("_", " ")),
+        el("span", { class: "badge" }, iv.status), el("code", { class: "muted" }, iv.id)),
+      iv.status !== "closed" ? el("div", { class: "hint" }, HINTS[iv.kind]) : null,
+      el("div", { class: "grid" }, el("div", {}, facts, controls, events), el("div", {}, shot)));
+  }
+
+  async function refresh() {
+    let state;
+    try {
+      const response = await fetch("api/state", { cache: "no-store" });
+      state = await response.json();
+    } catch (e) { $("error").textContent = "The run has ended or the console stopped."; return; }
+    const text = JSON.stringify(state) + "\u0000" + operatorBox.value;
+    const live = state.interventions.some((i) => i.live_screenshot && i.status !== "closed");
+    const typing = document.activeElement && ["TEXTAREA", "SELECT"].includes(document.activeElement.tagName);
+    // Re-render on a change, or to refresh a live screenshot, but never under someone's typing.
+    if (text === last && (!live || typing)) return;
+    last = text;
+    $("run").textContent = state.run_id || "-";
+    $("state").textContent = state.state;
+    $("lease").textContent = `lease: ${state.lease.holder || "nobody"} (epoch ${state.lease.epoch})`;
+    const me = myName();
+    const list = $("list");
+    list.replaceChildren(...(state.interventions.length
+      ? state.interventions.map((iv) => card(iv, me))
+      : [el("p", { class: "empty muted" }, "Nothing needs a person right now.")]));
+  }
+
+  operatorBox.addEventListener("input", () => { last = ""; });
+  refresh();
+  setInterval(refresh, 1500);
+})();
+</script>
+</body>
+</html>

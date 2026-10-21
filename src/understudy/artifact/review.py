@@ -54,6 +54,11 @@ def _header(capability: Capability) -> list[str]:
         f"  discovered  run {capability.provenance.discovery_run_id} "
         f"against {capability.provenance.recorded_against} "
         f"({capability.provenance.authored})",
+        *(
+            [f"  by a person {', '.join(capability.provenance.human_steps)}  [REVIEW EACH]"]
+            if capability.provenance.human_steps
+            else []
+        ),
         "",
     ]
 
@@ -114,6 +119,11 @@ def _steps(capability: Capability) -> list[str]:
         lines.append(
             f"  {mark} {step.id:<{width}}  {step.action:<9} {value:<24} {step.intent.strip()}"
         )
+        if step.id in capability.provenance.human_steps:
+            lines.append(
+                "      recorded from a person's action during a takeover: confirm it belongs "
+                "in the flow"
+            )
         lines += _step_detail(step)
     lines.append("")
     return lines

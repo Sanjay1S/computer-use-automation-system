@@ -70,6 +70,9 @@ def test_missing_credentials_stop_before_anything_runs(tmp_path: Path) -> None:
         (("--inject", "teleport"), "unknown fault"),
         (("--input", "account_type"), "name=value"),
         (("--input", "a=1", "--input", "a=2"), "given twice"),
+        (("--on-stuck", "panic"), "unknown --on-stuck"),
+        (("--approval", "maybe"), "unknown --approval"),
+        (("--approval", "interactive", "--approve"), "exclude each other"),
     ],
 )
 def test_usage_errors_exit_2(tmp_path: Path, args: tuple[str, ...], message: str) -> None:
@@ -100,3 +103,17 @@ def test_the_env_file_fills_only_unset_values(
     assert os.environ["US_B"] == "quoted"
     assert os.environ["US_C"] == ""
     assert os.environ["US_D"] == "from-env"
+
+
+def test_with_an_operator_the_console_address_is_printed_and_a_rejection_still_returns(
+    tmp_path: Path,
+) -> None:
+    """A run rejected in preflight never opens a browser, with or without an operator."""
+    code, out, err = invoke(
+        "--input", "account_type=GOLD", "--input", "funding_account_id=12345", "--allow-draft",
+        "--on-stuck", "escalate", "--console-port", "0", "--runs-dir", str(tmp_path),
+        env=CREDS,
+    )  # fmt: skip
+    assert code == 3
+    assert "operator console: http://127.0.0.1:" in err
+    assert json.loads(out)["rejection"]["code"] == "invalid_input"

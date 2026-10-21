@@ -16,6 +16,9 @@ Plan §6, in order:
 9. effects, retries and the re-entry point follow the policy and the commit rule;
 10. lint runs, and its findings go to the review summary with the compiler's notes.
 
+A person's actions during a takeover compile like the model's and are listed in
+`provenance.human_steps`, which the review summary flags.
+
 The draft is never approved here: a person reviews it.
 """
 
@@ -140,6 +143,7 @@ class _Compiler:
         self.steps: list[Step] = []
         self.outcomes: list[OutcomeSpec] = []
         self.outputs: list[OutputSpec] = []
+        self.human_steps: list[str] = []
         self.commit_seen = False
 
     def run(self) -> Compilation:
@@ -172,6 +176,12 @@ class _Compiler:
             self._extract(output)
         if self.problems:
             raise CompileError(self.problems)
+        if self.human_steps:
+            self.notes.append(
+                f"steps {', '.join(self.human_steps)} were recorded from a person's actions: "
+                "check that each belongs in the flow and is not only the clearing of something "
+                "in the way"
+            )
         success = self._success(entry_state)
         capability = self._capability(success)
         report = lint(capability, self.gate)
@@ -261,6 +271,14 @@ class _Compiler:
                 "was dropped"
             )
             return
+        if call.actor == "human" and (element is None or element.target is None):
+            # No element description here: for an element that was gone it is raw page
+            # text, and this note goes to review.txt unredacted. trajectory.json has it.
+            self.notes.append(
+                f"call {call.seq}: a person's {call.member} was not compiled; its element was "
+                "gone before its locators could be verified. Check whether the flow needs it"
+            )
+            return
         if element is None or element.target is None:
             why = "; ".join(
                 f"{by}: {reason}" for by, reason in (element.rejected if element else [])
@@ -311,6 +329,8 @@ class _Compiler:
                 value=value,
                 **shape.fields(),
             )
+        if call.actor == "human":
+            self.human_steps.append(step.id)
         if commit:
             self.commit_seen = True
             if not step.expect:
@@ -515,7 +535,7 @@ class _Compiler:
                 recorded_against=self.t.tenant,
                 goal_template=self.goal.goal,
                 models_served=self.models_served,
-                human_steps=[],
+                human_steps=self.human_steps,
                 locator_stats=LocatorStats(
                     targets=len(targets),
                     locators=len(locators),

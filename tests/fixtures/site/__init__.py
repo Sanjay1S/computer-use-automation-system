@@ -47,6 +47,9 @@ class FixtureSite:
     next_id: int = 13566
     accounts_delay_ms: int = 0
     """Page-side delay before the funding list is filled, for readiness tests."""
+    result_delay_ms: int = 0
+    """Page-side delay before a created account is shown: the app committed, and the
+    page says so only later (after replay has stopped waiting, in the verify tests)."""
     accounts_status: int = 200
     """Status the accounts list answers with; >= 400 makes the page show its
     internal-error panel, as ParaBank does when that XHR fails."""
@@ -113,7 +116,10 @@ class FixtureSite:
             return self._overview(route)
         if name == "openaccount.htm":
             right = page(
-                "openaccount.html", customer=CUSTOMER_ID, delay=str(self.accounts_delay_ms)
+                "openaccount.html",
+                customer=CUSTOMER_ID,
+                delay=str(self.accounts_delay_ms),
+                result_delay=str(self.result_delay_ms),
             )
             return self._html(route, "Open Account", page("services_panel.html"), right, "", {})
         if name == "activity.htm":

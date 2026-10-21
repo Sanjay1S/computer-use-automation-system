@@ -29,3 +29,20 @@ make test-live                        # the same flow as a test (needs the conta
 ```
 
 The command prints the result as JSON and exits 0 (succeeded), 1 (failed), 3 (rejected), 4 (business outcome) or 5 (needs a human). Each run writes `runs/<run_id>/`: redacted events, masked screenshots, a failure bundle when something went wrong, and `result.json`.
+
+## Operator handoff
+
+With `--on-stuck escalate`, a run that reaches a state it cannot handle safely (an unknown overlay, a commit whose answer never came) waits for a person instead of returning `needs_human`. With `--approval interactive`, the commit waits for an operator's approval. Both print the address of the operator console (`127.0.0.1:8765` with a random token; `--console-port` to change it).
+
+```bash
+D=capabilities/drafts/parabank.open_account@1.0.0.json
+# Takeover: claim in the console, close the notice in the browser window, then Resume.
+uv run understudy replay $D --tenant parabank-local --allow-draft --approve --headed \
+    --on-stuck escalate --inject unknown_modal_at:s3 \
+    --input account_type=SAVINGS --input funding_account_id=12345
+# Interactive approval: Approve or Deny the commit in the console.
+uv run understudy replay $D --tenant parabank-local --allow-draft --approval interactive \
+    --input account_type=SAVINGS --input funding_account_id=12345
+```
+
+A takeover needs `--headed` and a display: the person acts in the same browser window the run drives. Commits stay blocked while they hold the session. Resume hands it back (replay checks the paused step first), Complete asks replay to verify the success state and read the outputs, and Abort ends the run. Every handoff is recorded in the run folder (`interventions/`, `handoff.json`, events with `actor: human`).

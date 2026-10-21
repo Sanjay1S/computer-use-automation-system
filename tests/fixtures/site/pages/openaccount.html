@@ -50,9 +50,11 @@
       fetch(url, { method: "POST", headers: { "Content-Type": "application/json" } })
         .then(function (r) { if (!r.ok) { throw new Error(String(r.status)); } return r.json(); })
         .then(function (data) {
-          var link = document.getElementById("newAccountId");
-          link.setAttribute("href", "activity.htm?id=" + data.id); link.textContent = data.id;
-          show("openAccountForm", false); show("openAccountResult", true);
+          setTimeout(function () {
+            var link = document.getElementById("newAccountId");
+            link.setAttribute("href", "activity.htm?id=" + data.id); link.textContent = data.id;
+            show("openAccountForm", false); show("openAccountResult", true);
+          }, {{result_delay}});
         })
         .catch(showError);
     });

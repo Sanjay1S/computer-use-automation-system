@@ -19,8 +19,11 @@ from understudy.artifact.lint import lint as run_lint
 from understudy.artifact.review import render
 from understudy.artifact.schema import Capability
 from understudy.chaos import Chaos, parse_fault
+from understudy.control.console import DEFAULT_PORT, Console
+from understudy.control.handoff import Control
+from understudy.control.interventions import Intervention
+from understudy.control.plane import ControlPlane
 from understudy.discovery.agent import AnthropicModel, ModelTurn
-from understudy.discovery.driver import ApprovalRequest
 from understudy.discovery.goal import load_goal
 from understudy.discovery.run import discover
 from understudy.policy.gate import PolicyGate
@@ -137,6 +140,28 @@ def replay_command(
         typer.Option("--inject", help="A fault to inject (sandbox tenants only). Repeatable."),
     ] = None,
     headed: Annotated[bool, typer.Option("--headed", help="Show the browser window.")] = False,
+    on_stuck: Annotated[
+        str,
+        typer.Option(
+            "--on-stuck",
+            help="fail: report needs_human. escalate: hand the live session to an operator "
+            "in the console.",
+        ),
+    ] = "fail",
+    approval_mode: Annotated[
+        str,
+        typer.Option(
+            "--approval",
+            help="token: the commit is approved by --approve. interactive: an operator "
+            "approves it in the console when the run reaches it.",
+        ),
+    ] = "token",
+    console_port: Annotated[
+        int, typer.Option("--console-port", help="Port of the operator console.")
+    ] = DEFAULT_PORT,
+    handoff_timeout: Annotated[
+        float, typer.Option("--handoff-timeout", help="Seconds to wait for an operator.")
+    ] = 1_800.0,
     runs_dir: Annotated[Path, typer.Option("--runs-dir", help="Where run folders go.")] = Path(
         "runs"
     ),
@@ -147,6 +172,15 @@ def replay_command(
     folder is redacted. Exit code: 0 succeeded, 1 failed, 3 rejected, 4 business
     outcome, 5 needs a human.
     """
+    if on_stuck not in ("fail", "escalate"):
+        typer.echo(f"unknown --on-stuck {on_stuck!r}; expected fail or escalate", err=True)
+        raise typer.Exit(2)
+    if approval_mode not in ("token", "interactive"):
+        typer.echo(f"unknown --approval {approval_mode!r}; expected token or interactive", err=True)
+        raise typer.Exit(2)
+    if approval_mode == "interactive" and approve:
+        typer.echo("--approve and --approval interactive exclude each other", err=True)
+        raise typer.Exit(2)
     load_env_file(Path(".env"))
     capability = _load(_resolve(capability_id))
     try:
@@ -166,6 +200,20 @@ def replay_command(
     )
     approval = grant(capability, values, tenant.id, "cli --approve") if approve else None
     with ExitStack() as stack:
+        control = None
+        if on_stuck == "escalate" or approval_mode == "interactive":
+            control = Control(
+                plane=_console(stack, ControlPlane(), runs_dir, console_port),
+                escalate=on_stuck == "escalate",
+                interactive_approval=approval_mode == "interactive",
+                max_wait_s=handoff_timeout,
+            )
+            if on_stuck == "escalate" and not headed:
+                typer.echo(
+                    "note: the browser is headless, so an operator can decide in the console "
+                    "but cannot act in the page; use --headed to allow a takeover",
+                    err=True,
+                )
 
         def open_page() -> Page:
             """Called only once preflight has passed: a rejected run starts no browser."""
@@ -180,6 +228,7 @@ def replay_command(
             approval=approval,
             allow_draft=allow_draft,
             chaos=Chaos(faults, gate) if faults else None,
+            control=control,
         )
     typer.echo(result.model_dump_json(indent=2, exclude_none=True))
     typer.echo(f"{result.status}: run folder {runs_dir / result.run_id}", err=True)
@@ -200,15 +249,29 @@ def discover_command(
         typer.Option("--out", help="Draft path. Default: capabilities/drafts/<id>.json."),
     ] = None,
     effort: Annotated[str, typer.Option("--effort", help="Model effort level.")] = "high",
+    on_stuck: Annotated[
+        str,
+        typer.Option(
+            "--on-stuck",
+            help="fail: end a stuck run. escalate: hand the live session to an operator, "
+            "then let the model continue.",
+        ),
+    ] = "fail",
+    console_port: Annotated[
+        int, typer.Option("--console-port", help="Port of the operator console.")
+    ] = DEFAULT_PORT,
+    handoff_timeout: Annotated[
+        float, typer.Option("--handoff-timeout", help="Seconds to wait for an operator.")
+    ] = 1_800.0,
     runs_dir: Annotated[Path, typer.Option("--runs-dir", help="Where run folders go.")] = Path(
         "runs"
     ),
 ) -> None:
     """Discover a flow with the model and compile it into a draft capability.
 
-    Runs only on sandbox tenants. Every commit the model attempts is shown here for
-    approval first. Exit code: 0 compiled and lint-clean, 1 not compiled or lint
-    errors, 2 usage, 3 rejected.
+    Runs only on sandbox tenants. Every commit the model attempts waits for an
+    operator's approval in the console (its address is printed). Exit code: 0
+    compiled and lint-clean, 1 not compiled or lint errors, 2 usage, 3 rejected.
     """
     load_env_file(Path(".env"))
     try:
@@ -225,8 +288,16 @@ def discover_command(
     if effort not in ("low", "medium", "high", "xhigh", "max"):
         typer.echo(f"unknown --effort {effort!r}", err=True)
         raise typer.Exit(2)
+    if on_stuck not in ("fail", "escalate"):
+        typer.echo(f"unknown --on-stuck {on_stuck!r}; expected fail or escalate", err=True)
+        raise typer.Exit(2)
 
     with ExitStack() as stack:
+        control = Control(
+            plane=_console(stack, ControlPlane(), runs_dir, console_port),
+            escalate=on_stuck == "escalate",
+            max_wait_s=handoff_timeout,
+        )
 
         def open_page() -> Page:
             playwright = stack.enter_context(sync_playwright())
@@ -243,9 +314,9 @@ def discover_command(
             model=MODEL_FACTORY(),
             open_page=open_page,
             runs_dir=runs_dir,
-            approve=_ask_operator,
             draft_path=out,
             effort=effort,
+            control=control,
         )
     typer.echo(result.model_dump_json(indent=2, exclude_none=True))
     typer.echo(f"{result.status}: run folder {runs_dir / result.run_id}", err=True)
@@ -263,16 +334,32 @@ MODEL_FACTORY: Callable[[], ModelTurn] = _anthropic_model
 """Swapped for a scripted model in tests."""
 
 
-def _ask_operator(request: ApprovalRequest) -> bool:
-    """Discovery's approval mode is interactive (policy.yaml): a person at this terminal."""
-    typer.echo("", err=True)
-    typer.echo("The model wants to run an action that commits:", err=True)
-    typer.echo(f"  {request.member} on {request.target}", err=True)
-    typer.echo(f"  page {request.url}", err=True)
+class _TerminalNotice:
+    """The local intervention queue: tells the person at this terminal where to look."""
+
+    def __init__(self, url: str) -> None:
+        self.url = url
+
+    def publish(self, intervention: Intervention) -> None:
+        where = f" at step {intervention.step_id}" if intervention.step_id else ""
+        typer.echo(
+            f"\nA person is needed: {intervention.kind} ({intervention.reason}){where}."
+            f"\n  Operator console: {self.url}",
+            err=True,
+        )
+
+
+def _console(stack: ExitStack, plane: ControlPlane, runs_dir: Path, port: int) -> ControlPlane:
+    """Starts the plane's console, running until the command ends."""
     try:
-        return bool(typer.confirm("Approve it?", default=False, err=True))
-    except (typer.Abort, EOFError):
-        return False
+        console = Console(plane, runs_dir, port=port)
+    except OSError as error:
+        typer.echo(f"cannot start the operator console on port {port}: {error}", err=True)
+        raise typer.Exit(2) from None
+    stack.enter_context(console)
+    plane.queue = _TerminalNotice(console.url)
+    typer.echo(f"operator console: {console.url}", err=True)
+    return plane
 
 
 @app.command("schema")

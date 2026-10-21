@@ -4,6 +4,7 @@ so each signal can be produced exactly."""
 
 from __future__ import annotations
 
+import itertools
 from collections.abc import Callable
 from typing import Any
 
@@ -13,7 +14,7 @@ from anthropic import APIConnectionError
 from anthropic.types.beta import BetaMessage, BetaToolResultBlockParam, BetaToolUseBlock
 
 from tests.fixtures.fake_model import Replies, browser, message, say, tool
-from understudy.discovery.agent import NOT_EXECUTED, Budget, DiscoveryAgent
+from understudy.discovery.agent import NOT_EXECUTED, Budget, DiscoveryAgent, Handback
 from understudy.discovery.prompts import CUT_OFF, NUDGE
 from understudy.discovery.recorder_tools import Finish
 
@@ -298,3 +299,111 @@ def test_a_dead_click_between_reads_is_still_a_repeated_action() -> None:
 
     assert (outcome.status, outcome.code) == ("stuck", "repeated_action")
     assert stub.calls.count("left_click") == 3
+
+
+# --- a person takes over a stuck run (M6) ----------------------------------------------------
+
+
+class Operator:
+    def __init__(self, *answers: Handback, on_call: Callable[[], None] | None = None) -> None:
+        self.answers = list(answers)
+        self.asked: list[str] = []
+        self.on_call = on_call
+
+    def __call__(self, code: str, reason: str) -> Handback:
+        self.asked.append(code)
+        if self.on_call:
+            self.on_call()
+        return self.answers.pop(0)
+
+
+def test_a_handed_back_run_hears_what_the_person_did_in_the_same_turn() -> None:
+    loop, model, _, _ = agent(
+        [
+            message(tool("request_human", reason="a modal", need="close it")),
+            *clicks(1),
+            message(tool("declare_success")),
+        ]
+    )
+    operator = Operator(Handback(True, text="A person closed the modal."))
+    loop.on_stuck = operator
+
+    outcome = loop.run_loop()
+
+    assert outcome.status == "succeeded"
+    assert operator.asked == ["human_requested"]
+    turn = model.requests[1]["messages"][-1]
+    assert turn["role"] == "user"
+    assert [b["type"] for b in turn["content"]] == ["tool_result", "text"]
+    assert turn["content"][1]["text"] == "A person closed the modal."
+    roles = [m["role"] for m in model.requests[-1]["messages"]]
+    assert all(a != b for a, b in itertools.pairwise(roles))  # no two user turns in a row
+
+
+def test_after_a_hand_back_only_new_calls_count_towards_stuck() -> None:
+    stub = StubBrowser(react=lambda t: (True, "s0"))
+    loop, _, _, _ = agent([*clicks(3), *clicks(2), message(tool("give_up"))], browser_stub=stub)
+    operator = Operator(Handback(True, text="Try again."))
+    loop.on_stuck = operator
+
+    outcome = loop.run_loop()
+
+    assert operator.asked == ["consecutive_errors"]
+    assert outcome.status == "gave_up"  # two more failures are not three
+
+
+def test_a_run_not_handed_back_stops_with_the_reason() -> None:
+    loop, _, _, _ = agent([message(tool("request_human", reason="a modal", need="close it"))])
+    loop.on_stuck = Operator(Handback(False, resolution="aborted by dana"))
+
+    outcome = loop.run_loop()
+
+    assert (outcome.status, outcome.code) == ("stuck", "human_requested")
+    assert outcome.reason.endswith("; aborted by dana")
+
+
+def test_a_nearly_spent_budget_goes_to_a_person_once_and_the_hard_limit_still_holds() -> None:
+    loop, _, _, _ = agent(clicks(10), budget=Budget(max_turns=5))
+    operator = Operator(Handback(True, text="Keep going."))
+    loop.on_stuck = operator
+
+    outcome = loop.run_loop()
+
+    assert operator.asked == ["budget_nearly_spent"]
+    assert (outcome.status, outcome.code, outcome.turns) == ("failed", "budget_exhausted", 5)
+
+
+def test_a_refused_turn_handed_back_answers_its_calls_first() -> None:
+    refused = message(
+        browser("navigate", url="https://x.test"),
+        stop_reason="refusal",
+        stop_details={"type": "refusal", "category": "cyber", "explanation": None},
+    )
+    loop, model, stub, _ = agent([refused, message(tool("declare_success"))])
+    loop.on_stuck = Operator(Handback(True, text="A person looked; carry on."))
+
+    outcome = loop.run_loop()
+
+    assert outcome.status == "succeeded"
+    assert stub.calls == []
+    turn = model.requests[1]["messages"][-1]
+    assert [b["type"] for b in turn["content"]] == ["tool_result", "text"]
+    assert turn["content"][0]["is_error"] is True
+
+
+def test_time_with_a_person_is_not_counted() -> None:
+    now = [0.0]
+
+    def away() -> None:
+        now[0] += 1_000.0
+
+    loop, _, _, _ = agent(
+        [message(tool("request_human", reason="r", need="n")), message(tool("declare_success"))],
+        budget=Budget(max_seconds=300),
+        clock=lambda: now[0],
+    )
+    loop.on_stuck = Operator(Handback(True, text="done"), on_call=away)
+
+    outcome = loop.run_loop()
+
+    assert outcome.status == "succeeded" and outcome.seconds == 0.0

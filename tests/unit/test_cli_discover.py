@@ -41,7 +41,7 @@ def isolated(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 
 
 def invoke(*args: str, env: dict[str, str] | None = None) -> tuple[int, str, str]:
-    result = CliRunner().invoke(app, ["discover", GOAL, *args], env=env)
+    result = CliRunner().invoke(app, ["discover", GOAL, "--console-port", "0", *args], env=env)
     return result.exit_code, result.stdout, result.stderr
 
 

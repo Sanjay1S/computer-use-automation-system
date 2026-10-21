@@ -60,6 +60,7 @@ from anthropic.types.beta import (
 from playwright.sync_api import Error as PlaywrightError
 from playwright.sync_api import Locator as PwLocator
 
+from understudy.control.plane import Lease
 from understudy.discovery.trajectory import (
     ACTION_MEMBERS,
     ElementRecord,
@@ -156,10 +157,14 @@ class DiscoveryBrowser(BetaAbstractBrowserToolset20260801):
         recorder: Recorder,
         *,
         approve: Approver = refuse_all,
+        lease: Callable[[], Lease | None] = lambda: None,
         settle_max_ms: int = 2_000,
         commit_wait_ms: int = 5_000,
     ) -> None:
+        """`lease` gives the agent's current lease: with a control plane, every
+        actuation is fenced by it, and a hand-back issues a new one."""
         self.surface = surface
+        self._lease = lease
         self.gate = surface.gate
         self.recorder = recorder
         self._approve = approve
@@ -427,7 +432,7 @@ class DiscoveryBrowser(BetaAbstractBrowserToolset20260801):
         if word in ("back", "forward"):
             raise ToolError("going back or forward is not available; navigate to an address")
         url = page.url if word == "reload" else urljoin(page.url, input.url)
-        status = self.surface.navigate(url)
+        status = self.surface.navigate(url, lease=self._lease())
         self._done.url = JSESSIONID.sub("", url)
         return BetaBrowserNavigateResult(
             url=JSESSIONID.sub("", page.url), status=status, title=page.title()
@@ -474,12 +479,14 @@ class DiscoveryBrowser(BetaAbstractBrowserToolset20260801):
         if input.modifiers:
             raise ToolError("clicks with modifier keys are not available")
         element, _ = self._resolved()
-        self.surface.act("click", element)
+        self.surface.act("click", element, lease=self._lease())
         return None
 
     def hover(self, context: BetaToolsetCallContext, input: BetaBrowserHoverInput) -> str | None:
         element = self._current.element if self._current else None
-        self.surface.hover(element if element is not None else self._target(input.target))
+        self.surface.hover(
+            element if element is not None else self._target(input.target), lease=self._lease()
+        )
         return None
 
     def form_input(
@@ -488,14 +495,14 @@ class DiscoveryBrowser(BetaAbstractBrowserToolset20260801):
         element, facts = self._resolved()
         value = _text(input.value)
         if facts is not None and facts.tag == "select":
-            self.surface.act("select", element, value)
+            self.surface.act("select", element, value, lease=self._lease())
             self._done.selected = self.surface.selected(element)
             self._done.candidates = self._done.selected or ()
         elif facts is not None and facts.input_type in ("checkbox", "radio"):
             value = "true" if value.lower() in ("true", "1", "yes", "on", "checked") else "false"
-            self.surface.act("check", element, value)
+            self.surface.act("check", element, value, lease=self._lease())
         else:
-            self.surface.act("fill", element, value)
+            self.surface.act("fill", element, value, lease=self._lease())
         self._done.value = value
         return None
 
@@ -504,7 +511,7 @@ class DiscoveryBrowser(BetaAbstractBrowserToolset20260801):
         if facts is None or not facts.is_form_control:
             raise ToolError("the focused element is not a text field; click a field first")
         value = self.surface.current_value(element) + input.text
-        self.surface.act("fill", element, value)
+        self.surface.act("fill", element, value, lease=self._lease())
         self._done.value = value
         return None
 
@@ -515,7 +522,7 @@ class DiscoveryBrowser(BetaAbstractBrowserToolset20260801):
         if repeat > 1 and self._current is not None and self._current.approved:
             raise ToolError("a key press that commits is pressed once; repeat must be 1")
         for _ in range(repeat):
-            self.surface.act("press", element, key)
+            self.surface.act("press", element, key, lease=self._lease())
         self._done.key = key
         return None
 
@@ -524,13 +531,15 @@ class DiscoveryBrowser(BetaAbstractBrowserToolset20260801):
         dx, dy = {"up": (0, -step), "down": (0, step), "left": (-step, 0), "right": (step, 0)}[
             input.scroll_direction
         ]
-        self.surface.wheel(input.target.x, input.target.y, dx, dy)
+        self.surface.wheel(input.target.x, input.target.y, dx, dy, lease=self._lease())
         return None
 
     def scroll_to(
         self, context: BetaToolsetCallContext, input: BetaBrowserScrollToInput
     ) -> str | None:
-        self.surface.scroll_into_view(self.surface.element_for_ref(input.target.ref))
+        self.surface.scroll_into_view(
+            self.surface.element_for_ref(input.target.ref), lease=self._lease()
+        )
         return None
 
     def wait(self, context: BetaToolsetCallContext, input: BetaBrowserWaitInput) -> str | None:

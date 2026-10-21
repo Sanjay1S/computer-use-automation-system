@@ -27,7 +27,8 @@ _INTEGER = re.compile(r"[+-]?\d+")
 class CommitApproval(BaseModel):
     """A grant for one commit: this capability, at this content hash, with these
     inputs, on this tenant. A stand-in for a signed grant from an approver; the CLI
-    mints one per invocation from `--approve`, and the console (M6) will too."""
+    mints one per invocation from `--approve`, and an operator's approval in the
+    console mints one when the run reaches its commit."""
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -86,8 +87,11 @@ def preflight(
     approval: CommitApproval | None,
     allow_draft: bool,
     fault_injection: bool = False,
+    interactive_approval: bool = False,
 ) -> Rejection | None:
-    """Checks run in order, and the first group with problems is the rejection."""
+    """Checks run in order, and the first group with problems is the rejection.
+    `interactive_approval`: no grant is needed now; a person approves the commit
+    when the run reaches it."""
     report = lint(capability, gate)
     artifact_hash = hashing.content_hash(capability)
     problems = _artifact_problems(capability, report, profile)
@@ -104,7 +108,14 @@ def preflight(
         problems.append(f"fault injection runs only on sandbox tenants; {gate.tenant.id!r} is not")
     if problems:
         return Rejection(code="policy", problems=problems)
-    problems = _approval_problems(capability, artifact_hash, inputs, gate.tenant.id, approval)
+    if interactive_approval and approval is None:
+        problems = []
+    elif approval is not None and gate.policy.approval.replay == "interactive":
+        problems = [
+            f"tenant {gate.tenant.id!r} accepts only interactive approval (--approval interactive)"
+        ]
+    else:
+        problems = _approval_problems(capability, artifact_hash, inputs, gate.tenant.id, approval)
     if problems:
         return Rejection(code="approval_required", problems=problems)
     return None
@@ -224,6 +235,19 @@ def _policy_problems(
             if not decision.allowed:
                 problems.append(f"step {step.id!r}: {decision.reason}")
     return problems
+
+
+def approval_problems(
+    capability: Capability,
+    artifact_hash: str,
+    inputs: Mapping[str, str],
+    tenant: str,
+    approval: CommitApproval | None,
+) -> list[str]:
+    """Whether this grant covers this invocation of the artifact at `artifact_hash`
+    (taken when the run started). Also checked on a grant minted in the console, so
+    it binds exactly as one from the command line does."""
+    return _approval_problems(capability, artifact_hash, inputs, tenant, approval)
 
 
 def _approval_problems(

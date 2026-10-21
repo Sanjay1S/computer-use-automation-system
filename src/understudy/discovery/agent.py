@@ -5,10 +5,13 @@ recording), and the loop can stop for a person at any point. The conversation is
 append-only: earlier turns are never edited or pruned, which preserved thinking
 requires and which keeps the prompt cache warm.
 
-Stuck signals end the run for a person rather than letting it wander: the model
+Stuck signals stop the run for a person rather than letting it wander: the model
 asks for one, repeats an action that changes nothing, keeps failing, makes no
 progress, nears its budget without succeeding, or is refused by the API's
-safeguards. (M6 turns these into a takeover of the live session.)
+safeguards. With an `on_stuck` handler the person takes over the live session; when
+they hand it back, what they did is told to the model in the same user turn as the
+tool results (never a separate, edited or reordered one), and the loop goes on.
+Stuck signals are then judged only over what happens after the hand-back.
 """
 
 from __future__ import annotations
@@ -33,6 +36,7 @@ MODEL = "claude-opus-5-5"
 MAX_TOKENS = 16_000
 FALLBACK_BETA = "server-side-fallback-2026-07-01"
 NOT_EXECUTED = "Not executed: an earlier action in this turn failed."
+REFUSED = "Not executed: this turn was declined."
 MAX_NUDGES = 2
 
 Status = Literal["succeeded", "gave_up", "stuck", "failed"]
@@ -94,6 +98,21 @@ class Tools(Protocol):
     ) -> tuple[BetaToolResultBlockParam, Finish | None]: ...
 
 
+@dataclass(frozen=True)
+class Handback:
+    """What a person's handling of a stuck run came to."""
+
+    resumed: bool
+    text: str = ""
+    """For the model, when resumed: what the person did and said."""
+    resolution: str = ""
+    """Why the run stops, when not resumed."""
+
+
+StuckHandler = Callable[[str, str], Handback]
+"""Called with the stuck code and reason."""
+
+
 class AgentOutcome(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -130,6 +149,7 @@ class DiscoveryAgent:
     goal_text: str
     run: RunContext | None = None
     on_turn: Callable[[int, str | None], None] | None = None
+    on_stuck: StuckHandler | None = None
     budget: Budget = field(default_factory=Budget)
     model_id: str = MODEL
     effort: str = "high"
@@ -142,6 +162,10 @@ class DiscoveryAgent:
         self._nudges = 0
         self._history: list[_Call] = []
         """Every tool call this run. Bounded by the turn budget."""
+        self._floor = 0
+        """Stuck signals look only at calls from here on: since the last hand-back."""
+        self._soft_budget = True
+        self.handoff_seconds = 0.0
         self._started = self.clock()
         self._tool_defs = [self.browser.to_dict(), *self.tools.definitions()]
 
@@ -171,7 +195,7 @@ class DiscoveryAgent:
         }
 
     def _turn(self) -> None:
-        self._check_budget(hard=True)
+        self._check_budget()
         try:
             response = self.model(self.request())
         except anthropic.AnthropicError as error:
@@ -189,27 +213,54 @@ class DiscoveryAgent:
 
         if response.stop_reason == "refusal":
             category = response.stop_details.category if response.stop_details else None
-            raise _Stop(
-                "stuck", "refusal", f"the model declined to continue (category: {category})"
-            )
+            reason = f"the model declined to continue (category: {category})"
+            # Nothing in a refused turn runs; its calls are answered in case a person
+            # hands the run back, since every tool_use needs its result.
+            unrun = [_result(t, REFUSED, error=True) for t in tool_uses]
+            self._end_turn(unrun, _Stop("stuck", "refusal", reason))
+            return
         if response.stop_reason == "max_tokens" and tool_uses:
-            self._reply([_result(t, CUT_OFF, error=True) for t in tool_uses])
+            results = [_result(t, CUT_OFF, error=True) for t in tool_uses]
             self._history.append(_Call("cut_off", "", "", "", True))
-            self._check_stuck()
+            self._end_turn(results, self._stuck())
             return
         if not tool_uses:
             self._nudges += 1
             if self._nudges > MAX_NUDGES:
-                raise _Stop("stuck", "no_tool_call", "the model stopped calling tools")
+                self._end_turn(
+                    [], _Stop("stuck", "no_tool_call", "the model stopped calling tools")
+                )
+                return
             self._reply([{"type": "text", "text": NUDGE}])
             return
         self._nudges = 0
         results, finish = self._execute(tool_uses)
-        self._reply(results)
         if finish is not None:
-            raise _Stop(finish.status, finish.code, finish.reason)
-        self._check_stuck()
-        self._check_budget(hard=False)
+            self._end_turn(results, _Stop(finish.status, finish.code, finish.reason))
+            return
+        self._end_turn(results, self._stuck() or self._nearly_spent())
+
+    def _end_turn(self, content: list[Any], stop: _Stop | None) -> None:
+        """The user turn that answers this one, and the stop, if any. A stuck run goes
+        to a person first: when they hand it back, their account joins this same turn."""
+        if stop is not None and stop.status == "stuck" and self.on_stuck is not None:
+            started = self.clock()
+            try:
+                answer = self.on_stuck(stop.code, stop.reason)
+            finally:
+                self.handoff_seconds += self.clock() - started
+            if answer.resumed:
+                self._reply([*content, {"type": "text", "text": answer.text}])
+                self._nudges = 0
+                self._floor = len(self._history)
+                if stop.code == "budget_nearly_spent":
+                    self._soft_budget = False  # the hard budget still applies
+                return
+            stop = _Stop(stop.status, stop.code, f"{stop.reason}; {answer.resolution}")
+        if content:
+            self._reply(content)
+        if stop is not None:
+            raise stop
 
     def _execute(
         self, tool_uses: list[BetaToolUseBlock]
@@ -245,10 +296,10 @@ class DiscoveryAgent:
 
     # --- stopping ----------------------------------------------------------------------------
 
-    def _check_stuck(self) -> None:
-        calls = self._history
+    def _stuck(self) -> _Stop | None:
+        calls = self._history[self._floor :]
         if len(calls) >= 3 and all(c.error for c in calls[-3:]):
-            raise _Stop("stuck", "consecutive_errors", "three calls in a row failed")
+            return _Stop("stuck", "consecutive_errors", "three calls in a row failed")
         # Repetition is judged over actions alone, so reading the page in between (the
         # usual rhythm) cannot hide a loop; three identical looks in a row count too.
         actions = [c for c in calls if c.member in ACTION_MEMBERS]
@@ -258,15 +309,34 @@ class DiscoveryAgent:
                 and len({(c.member, c.input_key) for c in recent}) == 1
                 and all(c.before == c.after for c in recent)
             ):
-                raise _Stop(
+                return _Stop(
                     "stuck", "repeated_action", f"{recent[0].member} three times, nothing changed"
                 )
         if len(actions) >= 5 and all(c.before == c.after for c in actions[-5:]):
-            raise _Stop("stuck", "no_progress", "five actions in a row changed nothing on the page")
+            return _Stop(
+                "stuck", "no_progress", "five actions in a row changed nothing on the page"
+            )
+        return None
 
-    def _check_budget(self, *, hard: bool) -> None:
+    def _nearly_spent(self) -> _Stop | None:
+        if not self._soft_budget:
+            return None
+        over = self._over(self.budget.stuck_at)
+        if not over:
+            return None
+        return _Stop(
+            "stuck",
+            "budget_nearly_spent",
+            f"{int(self.budget.stuck_at * 100)}% of the {over} budget is spent without success",
+        )
+
+    def _check_budget(self) -> None:
+        over = self._over(1.0)
+        if over:
+            raise _Stop("failed", "budget_exhausted", f"the {over} budget is spent")
+
+    def _over(self, share: float) -> str | None:
         budget = self.budget
-        share = budget.stuck_at if not hard else 1.0
         spent = (
             self.turns / budget.max_turns,
             self._elapsed() / budget.max_seconds,
@@ -277,18 +347,11 @@ class DiscoveryAgent:
             for name, used in zip(("turns", "time", "cost"), spent, strict=True)
             if used >= share
         ]
-        if not over:
-            return
-        if hard:
-            raise _Stop("failed", "budget_exhausted", f"the {over[0]} budget is spent")
-        raise _Stop(
-            "stuck",
-            "budget_nearly_spent",
-            f"{int(budget.stuck_at * 100)}% of the {over[0]} budget is spent without success",
-        )
+        return over[0] if over else None
 
     def _elapsed(self) -> float:
-        return self.clock() - self._started - self.browser.approval_seconds
+        """Time waiting for people (approvals, takeovers) is not the run's to spend."""
+        return self.clock() - self._started - self.browser.approval_seconds - self.handoff_seconds
 
     def _outcome(self, stop: _Stop) -> AgentOutcome:
         return AgentOutcome(

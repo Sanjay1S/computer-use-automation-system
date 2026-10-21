@@ -110,7 +110,7 @@ class RunContext:
         step_id: str | None = None,
         member: str | None = None,
         action: str | None = None,
-        target: Target | None = None,
+        target: Target | EventTarget | None = None,
         locator_used: str | None = None,
         value: str | None = None,
         value_sensitivity: Sensitivity = "pii",
@@ -194,10 +194,16 @@ class RunContext:
         return path
 
 
-def _event_target(target: Target | None, redactor: Redactor) -> EventTarget | None:
+def _event_target(target: Target | EventTarget | None, redactor: Redactor) -> EventTarget | None:
+    """An EventTarget stands in for an element known only by description (a person
+    clicked it and it is gone); it is redacted like any other."""
     if target is None:
         return None
-    fingerprint = target.fingerprint.model_dump(exclude_none=True)
+    fingerprint = (
+        target.fingerprint
+        if isinstance(target, EventTarget)
+        else target.fingerprint.model_dump(exclude_none=True)
+    )
     return EventTarget(
         description=redactor.text(target.description),
         fingerprint={k: redactor.text(str(v)) for k, v in fingerprint.items()},
