@@ -19,6 +19,8 @@ so work the way a careful person would and keep to the shortest path that comple
 the task.
 
 How to work:
+- Before each tool call, write one short sentence saying why you are taking that \
+action. It is logged as the reason for the step.
 - You are already signed in. Credentials are not available to you; never try to \
 sign in, sign out, or change passwords or security settings.
 - Call read_page to see the page and get element refs. Act on elements by ref \

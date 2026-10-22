@@ -4,7 +4,7 @@
   "completed_by": "automation",
   "drift": [],
   "escalation": {
-    "detail": "none of the step's expectations held within ••••0 ms",
+    "detail": "none of the step's expectations held within 30 s",
     "evidence": {
       "aria": "failure/aria.txt",
       "console": "failure/console.txt",
@@ -23,7 +23,7 @@
   "outputs": null,
   "recoveries": [],
   "rejection": null,
-  "run_id": "replay-20261022T122530Z-hgipjl",
+  "run_id": "replay-20261022T150430Z-zxxhyk",
   "side_effects": {
     "commit_requests": 1,
     "commit_state": "unknown",
@@ -32,31 +32,31 @@
   "status": "needs_human",
   "tenant": "parabank-local",
   "timings": {
-    "duration_ms": 31006,
-    "finished_at": "2026-10-22T12:26:01.665116Z",
-    "started_at": "2026-10-22T12:25:30.658577Z",
+    "duration_ms": 30977,
+    "finished_at": "2026-10-22T15:05:01.168728Z",
+    "started_at": "2026-10-22T15:04:30.191419Z",
     "steps": [
       {
         "attempt": 0,
-        "duration_ms": 42,
+        "duration_ms": 44,
         "step_id": "s1_go_openaccount",
         "waited_ms": 0
       },
       {
         "attempt": 0,
-        "duration_ms": 41,
+        "duration_ms": 42,
         "step_id": "s2_select_account_type",
         "waited_ms": 0
       },
       {
         "attempt": 0,
-        "duration_ms": 45,
+        "duration_ms": 44,
         "step_id": "s3_select_funding_account_id",
         "waited_ms": 0
       },
       {
         "attempt": 0,
-        "duration_ms": 30145,
+        "duration_ms": 30090,
         "step_id": "s4_click_open_new_account",
         "waited_ms": 0
       }

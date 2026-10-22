@@ -514,7 +514,7 @@ class _Execution:
                 "not_ready",
                 step.id,
                 f"the step's readiness check ({step.wait_before.kind if step.wait_before else ''})",
-                f"it never held within {step.timeout_ms} ms",
+                f"it never held within {_seconds(step.timeout_ms)}",
             )
         attempts = _attempts(last)
         raise _Fail(
@@ -597,7 +597,7 @@ class _Execution:
                 return "continue"  # nothing to wait for; the global states were checked once
             if time.monotonic() >= deadline:
                 disposition = step.resolved_on_no_match
-                why = f"none of the step's expectations held within {step.timeout_ms} ms"
+                why = f"none of the step's expectations held within {_seconds(step.timeout_ms)}"
                 self._event_race(step, started, None, disposition)
                 return self._apply(step, disposition, why)
             surface.pause(self.r.poll_ms)
@@ -1430,6 +1430,12 @@ def _expected(step: Step) -> str:
     if step.expect:
         return "one of: " + "; ".join(e.description for e in step.expect)
     return step.intent
+
+
+def _seconds(ms: int) -> str:
+    """A duration for free text, in seconds. Milliseconds would print as a 5-digit
+    run ("15000 ms"), which the redactor masks as a possible account id."""
+    return f"{ms / 1000:g} s"
 
 
 def _line(error: BaseException) -> str:

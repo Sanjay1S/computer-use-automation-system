@@ -1,4 +1,4 @@
-"""The replay scenario matrix (plan §7) against the routed fixture site.
+"""The replay scenario matrix (REPORT.md §3) against the routed fixture site.
 
 Every row of the taxonomy table has a test that asserts the status, the code, the
 commit state and what reached the app, so a fault that fails in the wrong way, or
@@ -371,6 +371,10 @@ def test_no_answer_after_the_commit_is_unknown_and_never_retried(
     assert result.side_effects.commit_state == "unknown"
     assert result.side_effects.commit_requests == 1
     assert result.recoveries == []
+    # The timeout reads in seconds, so the redactor's digit-run rule leaves it legible.
+    stored = json.loads((replay.run_dir() / "result.json").read_text())
+    assert stored["escalation"]["detail"].endswith(" s")
+    assert "••••" not in stored["escalation"]["detail"]
 
 
 def test_an_app_error_after_the_commit_goes_to_a_human(replay: Replay, site: FixtureSite) -> None:

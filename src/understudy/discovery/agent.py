@@ -382,8 +382,11 @@ class DiscoveryAgent:
 
 
 def _rationale(response: BetaMessage) -> str | None:
-    """The turn's summarized thinking: the "why" logged with its action."""
+    """The "why" logged with the turn's action: the summarized thinking, then the
+    sentence the prompt asks for before each call. Adaptive thinking skips easy
+    turns, so the visible sentence is what most turns have. Persisted redacted."""
     parts = [b.thinking.strip() for b in response.content if b.type == "thinking" and b.thinking]
+    parts += [b.text.strip() for b in response.content if b.type == "text" and b.text]
     text = " ".join(p for p in parts if p)
     return text[:1_000] or None
 

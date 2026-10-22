@@ -14,7 +14,7 @@ from anthropic import APIConnectionError
 from anthropic.types.beta import BetaMessage, BetaToolResultBlockParam, BetaToolUseBlock
 
 from tests.fixtures.fake_model import Replies, browser, message, say, tool
-from understudy.discovery.agent import NOT_EXECUTED, Budget, DiscoveryAgent, Handback
+from understudy.discovery.agent import NOT_EXECUTED, Budget, DiscoveryAgent, Handback, _rationale
 from understudy.discovery.prompts import CUT_OFF, NUDGE
 from understudy.discovery.recorder_tools import Finish
 
@@ -112,6 +112,37 @@ def test_the_history_is_append_only_and_tools_never_change() -> None:
     assert first["messages"] == [{"role": "user", "content": "Do the task."}]
     assert first["tool_choice"] == {"type": "auto", "disable_parallel_tool_use": True}
     assert "budget_tokens" not in str(first["thinking"])
+
+
+def test_the_rationale_is_the_visible_sentence_when_thinking_was_skipped() -> None:
+    # Adaptive thinking skips easy turns; the real discovery run had no thinking block
+    # on any turn, so the sentence before the tool call is the only "why" there is.
+    click = browser("left_click", target={"type": "ref", "ref": "ref_1"})
+    turn = message([*say("Submitting the form to open the account."), *click], thinking=None)
+
+    assert _rationale(turn) == "Submitting the form to open the account."
+
+
+def test_the_rationale_joins_thinking_and_the_visible_sentence() -> None:
+    turn = message([*say("Reading the page."), *tool("read_page")], thinking="Need refs first.")
+
+    assert _rationale(turn) == "Need refs first. Reading the page."
+
+
+def test_a_turn_with_neither_has_no_rationale() -> None:
+    assert _rationale(message(tool("read_page"), thinking=None)) is None
+
+
+def test_the_rationale_reaches_the_decide_event() -> None:
+    reasons: list[str | None] = []
+    loop, _, _, _ = agent(
+        [message([*say("Done: the confirmation shows."), *tool("declare_success")], thinking=None)]
+    )
+    loop.on_turn = lambda _turn, rationale: reasons.append(rationale)
+
+    loop.run_loop()
+
+    assert reasons == ["Done: the confirmation shows."]
 
 
 def test_turns_without_a_tool_call_are_nudged_then_stuck() -> None:
@@ -301,7 +332,7 @@ def test_a_dead_click_between_reads_is_still_a_repeated_action() -> None:
     assert stub.calls.count("left_click") == 3
 
 
-# --- a person takes over a stuck run (M6) ----------------------------------------------------
+# --- a person takes over a stuck run ----------------------------------------------------------
 
 
 class Operator:
