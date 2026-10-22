@@ -7,7 +7,8 @@ unexport VIRTUAL_ENV
 -include .env
 export PARABANK_PORT PARABANK_USERNAME PARABANK_PASSWORD ANTHROPIC_API_KEY
 
-PARABANK_IMAGE ?= parasoft/parabank
+# Pinned: the demo data (customer john, account 13344) is what this image seeds.
+PARABANK_IMAGE ?= parasoft/parabank@sha256:0de7bbc8eb0f7ba61579421df1fc834fd7f559c08bf295597c0f9081e0a906e9
 PARABANK_PORT ?= 8080
 
 .PHONY: setup check fmt test test-live parabank-up parabank-down parabank-logs

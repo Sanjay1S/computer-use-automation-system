@@ -1,12 +1,12 @@
 """A routed fake ParaBank at https://fixture.test: no server, no network.
 
-The open-account markup is copied from local ParaBank (M3 capture): the result and
+The open-account markup is copied from local ParaBank's page source: the result and
 error panels are in the page, hidden, from the start; the funding list arrives by
 XHR; the submit is an `<input type="button">` that POSTs createAccount; the
 account-type options are valued 0/1 and labelled CHECKING/SAVINGS. The session
-behaves as recon found it (plan §18.1): Tomcat-style `;jsessionid=` URL rewriting
+behaves as recon found it (`apps/parabank/profile.yaml`): Tomcat-style `;jsessionid=` URL rewriting
 before the cookie is established, the login form re-rendered in place on an
-expired session (F3), and a bad account id answered with a business error (F5).
+expired session, and a bad account id answered with a business error.
 
 Redirect hops are never routed by Playwright, so this site never redirects: login
 answers with the overview page directly.
@@ -110,7 +110,7 @@ class FixtureSite:
             "admin.htm",
         )
         if name in protected and not signed_in:
-            # F3: same URL, login form rendered in place. Not a redirect.
+            # Same URL, login form rendered in place. Not a redirect.
             return self._html(route, "Customer Login", self._login(sid), "", sid, headers)
         if name == "overview.htm":
             return self._overview(route)
@@ -162,7 +162,7 @@ class FixtureSite:
         if account in self.accounts:
             right = f'<h1 class="title">Account Details</h1><p id="accountId">{account}</p>'
         else:
-            # F5: a business error, not the generic internal-error panel.
+            # A business error, not the generic internal-error panel.
             right = (
                 '<h1 class="title">Error!</h1>'
                 f'<p class="error">Could not find account #{account}</p>'

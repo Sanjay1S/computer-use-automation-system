@@ -33,7 +33,7 @@ cp .env.example .env  # then fill it in; .env is gitignored
 
 ```bash
 make check   # ruff, ruff format --check, mypy (strict, all of src/)
-make test    # 562 tests, about two minutes: no network, API key or Docker
+make test    # 567 tests, about two minutes: no network, API key or Docker
 ```
 
 The suite drives a routed fake origin (`https://fixture.test`) that copies ParaBank's real DOM, plus a scripted fake model that exercises the whole chain (discover, compile, replay) offline. Tests marked `live` (`make test-live`) need the container, credentials and, for one of them, the API key; they are skipped by default.
@@ -62,7 +62,7 @@ uv run understudy replay parabank.open_account --tenant parabank-local --approve
 uv run understudy describe parabank.open_account --as tool
 ```
 
-The repo already contains an approved artifact and a finished discovery run, so you can start at step 3 (the committed artifact was discovered on the public ParaBank instance and replays here unchanged). `13344` is one of the demo customer's accounts on a fresh container; account ids differ per instance. Discovery can also run on `parabank-public`, Parasoft's shared demo site, which the repo limits to a single discovery and a single replay; prefer the local container.
+The repo already contains an approved artifact and a finished discovery run, so you can start at step 3 (the committed artifact was discovered on the public ParaBank instance and replays here unchanged). `13344` is one of the demo customer's accounts on a fresh container; account ids differ per instance. Discovery can also run on `parabank-public`, Parasoft's shared demo site; because it is shared, we kept it to a single discovery run (our rule, not enforced in code). Prefer the local container.
 
 ### Error and exceptional states
 

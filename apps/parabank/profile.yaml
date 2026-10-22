@@ -5,9 +5,9 @@ description: >
   Parasoft ParaBank demo banking app (legacy Java EE / Tomcat, server-rendered,
   jsessionid in URLs, AJAX-loaded option lists, no test ids).
 
-# Verified 2026-10-20 (M1 recon, M3 page source) against:
+# Verified 2026-10-20 (recon in scripts/recon.py, then the page source) against:
 #   local:  http://localhost:8089/parabank  (Docker image parasoft/parabank; this
-#           machine maps the container's 8080 to host port 8089, plan §18.1 F4)
+#           machine maps the container's 8080 to host port 8089 via PARABANK_PORT)
 #   public: https://parabank.parasoft.com/parabank
 
 login:
@@ -45,11 +45,11 @@ login:
         note: "The value attribute is the label."
   # Recon 02_overview: every signed-in page has the left-panel "Log Out" link.
   signed_in: { kind: visible, role: link, name: Log Out }
-  # M4: confirmed on local ParaBank with a wrong password (read-only check).
+  # Confirmed on local ParaBank with a wrong password (read-only check).
   rejected: { kind: visible, text: The username and password could not be verified. }
 
 global_states:
-  # Recon F3: a protected page re-renders the login form in place at the same URL.
+  # Recon: a protected page re-renders the login form in place at the same URL.
   # There is no redirect, so only the DOM shows that the session is gone.
   - id: session_expired
     description: The session has expired (the login form is showing)
@@ -59,7 +59,7 @@ global_states:
     description: The page load failed with a server error (5xx)
     when: { kind: http_status, min: 500, max: 599 }
     handling: transient
-  # M3, F8: the page script shows this panel when an XHR fails. It is in the DOM,
+  # From the page source: the page script shows this panel when an XHR fails. It is in the DOM,
   # hidden, on every load, so only its visibility counts.
   - id: app_internal_error
     description: The app is showing its internal-error panel
@@ -82,7 +82,7 @@ recon:
     route: /activity.htm?id=<bogus>
     shows: 'heading "Error!" and "Could not find account #<id>"'
     note: >
-      F5: a bad account id is a business outcome on that page, not the generic
+      A bad account id is a business outcome on that page, not the generic
       internal-error panel. Belongs to a capability's outcomes, not to global states.
   routes:
     open_account: /openaccount.htm
@@ -102,7 +102,7 @@ recon:
   overview_heading_by_tenant:
     local: Account Overview
     public: Accounts Overview
-    note: "F6: per-tenant label drift. Never a cross-tenant checkpoint string."
+    note: "Per-tenant label drift. Never a cross-tenant checkpoint string."
   url_conventions:
     jsessionid_in_path: true
     jsessionid_pattern: ";jsessionid=[0-9A-F]+"

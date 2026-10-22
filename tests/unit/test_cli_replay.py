@@ -13,7 +13,7 @@ from tests.conftest import REPO
 from understudy import cli
 from understudy.cli import app, load_env_file
 
-DRAFT = str(REPO / "capabilities" / "drafts" / "parabank.open_account@1.0.0.json")
+DRAFT = str(REPO / "tests" / "fixtures" / "example_capability.json")
 CREDS = {"PARABANK_USERNAME": "john", "PARABANK_PASSWORD": "pw-for-cli-test"}
 
 

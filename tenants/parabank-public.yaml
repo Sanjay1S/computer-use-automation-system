@@ -2,8 +2,8 @@ schema_version: understudy.tenant/v1
 id: parabank-public
 vendor_app: parabank
 base_url: https://parabank.parasoft.com/parabank
-# Parasoft's public demo: a sandbox, but a shared one. Plan §2 D1 limits it to one
-# discovery run and one replay.
+# Parasoft's public demo: a sandbox, but a shared one. By our own rule (not enforced
+# in code) it gets one discovery run and at most one replay; use parabank-local.
 sandbox: true
 policy:
   # Least privilege on a shared instance: only the flow under test may commit.

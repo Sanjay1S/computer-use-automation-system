@@ -517,7 +517,7 @@ class WebSurface:
         script cannot ride an approval to commit again. Open it only once the commit
         is approved, and keep it open through the outcome race: the request may
         leave after the click returns. (Binding the approval to the capability,
-        inputs and tenant is the control plane's job, M6.)"""
+        inputs and tenant is the control plane's job.)"""
         if self._commit_budget is not None:
             raise RuntimeError("a commit window is already open")
         self._commit_budget = {"actions": 1, "requests": 1}

@@ -114,7 +114,7 @@ def test_a_failure_bundle_has_everything_and_leaks_nothing(
 def test_leak_scan_over_a_whole_run(
     page: Page, surface: WebSurface, site: FixtureSite, tmp_path: Path
 ) -> None:
-    """Plan §11: grep every file a run writes for the password, the session id and
+    """Grep every file a run writes for the password, the session id and
     the SSN pattern; the count must be 0. The account numbers the run handled are
     checked whole, and every mask is checked to reveal at most one digit."""
     run = RunContext(tmp_path, kind="replay", redactor=Redactor(b"k"), meta={"tenant": "fixture"})

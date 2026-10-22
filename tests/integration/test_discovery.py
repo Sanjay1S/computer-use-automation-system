@@ -1,6 +1,6 @@
 """Discovery end to end, offline: a scripted model drives the real driver, recorder and
 compiler against the routed fixture site, and the compiled draft is then replayed by
-the M4 engine. This is the whole chain with only the model faked.
+the replay engine. This is the whole chain with only the model faked.
 """
 
 from __future__ import annotations

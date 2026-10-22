@@ -1,4 +1,4 @@
-"""ParaBank reconnaissance (M1): no LLM, read-only, logs in and records AI-mode
+"""ParaBank reconnaissance: no LLM, read-only, logs in and records AI-mode
 snapshots and screenshots of the pages the discovery/replay seams depend on.
 
 Usage:

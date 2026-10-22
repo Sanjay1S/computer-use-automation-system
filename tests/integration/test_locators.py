@@ -60,7 +60,7 @@ def test_the_submit_button_gets_role_first_and_never_a_name_only_locator(
 def test_unnamed_selects_are_anchored_on_their_neighbouring_text(
     page: Page, surface: WebSurface
 ) -> None:
-    """F7: ParaBank labels these selects with sibling <p> text, so there is no
+    """ParaBank labels these selects with sibling <p> text, so there is no
     role+name or label locator; the derived text anchor is their only fallback."""
     open_form(page, surface)
     account_type = surface.synthesize(page.locator("select#type")).target
@@ -191,7 +191,7 @@ def test_every_locator_in_the_example_artifact_resolves_on_its_own(
             resolution = surface.resolve(alone, params)
             assert resolution.ok, (step.id, candidate.value, resolution.attempts)
 
-    # The control: the M2 locator this test exists to catch does not resolve.
+    # The control: the first-draft locator this test exists to catch does not resolve.
     s4 = capability.steps[3].target
     assert s4 is not None
     wrong = loc("css", "input[type='submit'][value='Open New Account']")

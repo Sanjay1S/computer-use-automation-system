@@ -1,4 +1,4 @@
-"""The compiler's rules, one at a time, on hand-built trajectories (plan §6)."""
+"""The compiler's rules, one at a time, on hand-built trajectories."""
 
 from __future__ import annotations
 
@@ -402,7 +402,7 @@ def test_literal_query_values_stay_encoded() -> None:
     assert url == "{base_url}/search.htm?q=a%26b%20c&id={funding_account_id}"
 
 
-# --- a person's steps (M6) -------------------------------------------------------------------
+# --- a person's steps -------------------------------------------------------------------------
 
 
 def test_a_persons_step_compiles_like_the_models_and_is_listed_for_review() -> None:

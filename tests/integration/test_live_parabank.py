@@ -44,7 +44,7 @@ def test_the_local_tenant_reaches_parabank_through_the_gated_surface(
 def test_the_hand_written_artifact_replays_on_local_parabank(
     playwright: Playwright, tmp_path: Path
 ) -> None:
-    """M4 acceptance: the real app, the real policy, no fixture. Opens one account."""
+    """Replay acceptance: the real app, the real policy, no fixture. Opens one account."""
     tenant = load_tenant(REPO / "tenants" / "parabank-local.yaml")
     gate = PolicyGate.load(PARABANK_POLICY, tenant)
     profile = load_profile(REPO / "apps" / "parabank" / "profile.yaml")
@@ -52,7 +52,7 @@ def test_the_hand_written_artifact_replays_on_local_parabank(
         credentials = Credentials.from_env(profile.login)
     except MissingCredentials as error:
         pytest.fail(f"this live check needs ParaBank credentials: {error}")
-    capability = hashing.load(REPO / "capabilities" / "drafts" / "parabank.open_account@1.0.0.json")
+    capability = hashing.load(REPO / "tests" / "fixtures" / "example_capability.json")
     inputs = {"account_type": "SAVINGS", "funding_account_id": "12345"}
     browser = playwright.chromium.launch(args=gate.chromium_args())
     try:

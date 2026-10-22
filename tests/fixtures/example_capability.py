@@ -1,15 +1,17 @@
 """The hand-written example artifact: ParaBank "Open New Account".
 
-Every locator, option list, heading and sample value here comes from the M1
-recon facts recorded in `apps/parabank/profile.yaml` and `runs/recon/` (plan
-§18.1 F1-F8). Where recon did not establish something, it is not asserted here:
+Every locator, option list, heading and sample value here comes from the
+recon facts recorded in `apps/parabank/profile.yaml` (gathered by
+`scripts/recon.py`). Where recon did not establish something, it is not asserted here:
 the two selects carry only their CSS id locator, because the recon snapshot
 shows them as unnamed `combobox` nodes (ParaBank labels them with plain <p>
 text), and the submit button's fingerprint stops at role+name. The post-commit
-error text at s4, unconfirmed in M1, was confirmed in M3 from the page source.
+error text at s4, unconfirmed by recon, was confirmed later from the page source.
 
-M7 replaces this with the discovered artifact; until then it is what proves the
-schema, the lint rules and the replay engine (M4) against a real page's shape.
+It predates discovery. The shipped capability is the discovered one in
+`capabilities/`; this one stays as the test fixture that proves the schema, the
+lint rules and the replay engine against a real page's shape. Its JSON export is
+`tests/fixtures/example_capability.json`.
 
 It is built in code rather than parsed from JSON so that the lint tests can take
 a valid artifact and break exactly one thing about it.
@@ -189,7 +191,7 @@ def _s2_type() -> Step:
         value=ParamValue(param="account_type"),
         target=Target(
             description="The account-type dropdown on the open-account form",
-            # M1 recon snapshot shows a bare `combobox` with no accessible name:
+            # The recon snapshot shows a bare `combobox` with no accessible name:
             # ParaBank labels these selects with plain <p> text, not <label for>.
             # So there is no role+name or label locator to offer here, and the
             # hand-written JSP id is the only verified handle.
@@ -283,7 +285,7 @@ def _s4_submit() -> Step:
                     stability="high",
                     verified=VERIFIED,
                     note=(
-                        "Role+name is unique: M1 confirmed the heading, the nav link and "
+                        "Role+name is unique: recon confirmed the heading, the nav link and "
                         "this button all read 'Open New Account', and only role tells "
                         "them apart. A name-only or text locator would match three "
                         "elements and is therefore not offered as a fallback."
@@ -291,7 +293,7 @@ def _s4_submit() -> Step:
                 ),
                 Locator(
                     by="css",
-                    # An <input type="button">, not a submit (M3, F8): the form has no
+                    # An <input type="button">, not a submit (page source): the form has no
                     # action and the page script POSTs createAccount on click.
                     value="input[type='button'][value='Open New Account']",
                     stability="medium",
@@ -306,7 +308,7 @@ def _s4_submit() -> Step:
                 when=VisibleCondition(text="Account Opened!"),
                 then=Disposition(do="continue"),
             ),
-            # Confirmed in M3 from the page source (F8): this text sits in the hidden
+            # Confirmed from the page source: this text sits in the hidden
             # #openAccountError panel, which the page script shows when the
             # createAccount request fails. `visible` matters: the panel is in the DOM,
             # hidden, on every load.
@@ -340,7 +342,7 @@ def _s5_extract() -> Step:
                     value="#newAccountId",
                     stability="high",
                     verified=VERIFIED,
-                    note=("The only element on the page carrying the id; M1 read '13566' from it."),
+                    note="The only element on the page carrying the id; recon read one from it.",
                 )
             ],
         ),

@@ -1,7 +1,7 @@
 """The signature DSL: small, deterministic page-state predicates.
 
 A signature is what a step waits for, what an outcome is detected by, and what
-the success checkpoint asserts. Evaluation (M4) uses non-waiting Playwright
+the success checkpoint asserts. Evaluation (in replay) uses non-waiting Playwright
 checks inside the outcome race, so every condition here must be answerable from
 a single synchronous look at the page.
 """

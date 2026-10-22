@@ -25,7 +25,7 @@ commit:
   button_names:
     - "Open New Account|Transfer|Send Payment|Apply Now|Update Profile"
   routes:
-    # Verified in M3 against local ParaBank: the open-account submit is this XHR
+    # Verified against local ParaBank: the open-account submit is this XHR
     # (POST ...createAccount?customerId=&newAccountType=&fromAccountId=). Other flows'
     # commit endpoints are not listed until recon confirms them.
     - /services_proxy/bank/createAccount

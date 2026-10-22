@@ -123,7 +123,7 @@ def test_resolver_rules_stop_an_off_host_redirect_before_it_is_sent(
     assert not any(hit.startswith("localhost") for hit in loopback.hits)
 
 
-# --- regressions from the M3 review ------------------------------------------------------
+# --- regressions from a code review ----------------------------------------------------------
 
 
 def test_a_page_route_registered_first_cannot_bypass_the_guard(

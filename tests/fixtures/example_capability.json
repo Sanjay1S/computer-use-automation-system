@@ -278,7 +278,7 @@
         "locators": [
           {
             "by": "role",
-            "note": "Role+name is unique: M1 confirmed the heading, the nav link and this button all read 'Open New Account', and only role tells them apart. A name-only or text locator would match three elements and is therefore not offered as a fallback.",
+            "note": "Role+name is unique: recon confirmed the heading, the nav link and this button all read 'Open New Account', and only role tells them apart. A name-only or text locator would match three elements and is therefore not offered as a fallback.",
             "stability": "high",
             "templated": false,
             "value": {
@@ -349,7 +349,7 @@
         "locators": [
           {
             "by": "css",
-            "note": "The only element on the page carrying the id; M1 read '13566' from it.",
+            "note": "The only element on the page carrying the id; recon read one from it.",
             "stability": "high",
             "templated": false,
             "value": "#newAccountId",

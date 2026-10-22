@@ -58,7 +58,7 @@ class LintReport:
 
 
 class PolicyView:
-    """What lint needs from a policy to check L007. The real gate (M3) implements
+    """What lint needs from a policy to check L007. The real gate (`PolicyGate`) implements
     this; lint takes the narrow view so the artifact package stays standalone."""
 
     def allows_route(self, route: str) -> bool:  # pragma: no cover - protocol default

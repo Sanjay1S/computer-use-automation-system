@@ -89,7 +89,7 @@ def test_an_interstitial_needs_exactly_one_way_out() -> None:
 
 def test_the_committed_draft_is_what_the_generator_builds() -> None:
     """Two copies of one artifact: the JSON reviewers read and the code tests mutate."""
-    committed = REPO / "capabilities" / "drafts" / "parabank.open_account@1.0.0.json"
+    committed = REPO / "tests" / "fixtures" / "example_capability.json"
     assert committed.read_text(encoding="utf-8") == hashing.canonical_json(CAP)
 
 

@@ -1,6 +1,6 @@
 """The compiler: a recorded trajectory becomes a draft capability artifact.
 
-Plan §6, in order:
+The rules, in order:
 1. keep only actions that ran (no reads, screenshots, waits, refusals or failures);
 2. coalesce: a click into a field followed by entering a value there is one step,
    a value entered twice in a row is the last one, and Tab presses are dropped;
@@ -706,7 +706,7 @@ def _evidence(record: ElementRecord, values: Mapping[str, str]) -> sig.Signature
 
 def _holds_in(condition: sig.VisibleCondition, items: list[_Item]) -> bool:
     """Whether a role+name or text condition is visible in a recorded snapshot. CSS
-    conditions cannot be judged from a snapshot; replay checks them live (D18)."""
+    conditions cannot be judged from a snapshot; replay checks them live."""
     if condition.role and condition.name:
         return any(i.role == condition.role and i.name == condition.name for i in items)
     if condition.text:

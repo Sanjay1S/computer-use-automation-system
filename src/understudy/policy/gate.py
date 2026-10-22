@@ -129,7 +129,7 @@ class PolicyGate(PolicyView):
 
         Host names only: a redirect to the same host on another port or scheme still
         goes out (with the host's cookies) and is only detected afterwards. Closing
-        that needs an egress proxy, which is design-only here (plan §8 limits)."""
+        that needs an egress proxy, which is design-only here (REPORT.md, Safety: limits)."""
         return [f"--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE {self.tenant.host}"]
 
     # --- actions ---------------------------------------------------------------

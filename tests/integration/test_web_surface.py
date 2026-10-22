@@ -87,14 +87,14 @@ def test_an_expired_session_rerenders_the_login_form_in_place(
 
     page.context.clear_cookies()
     surface.navigate(f"{BASE_URL}/overview.htm")
-    assert page.url == f"{BASE_URL}/overview.htm"  # F3: no redirect
+    assert page.url == f"{BASE_URL}/overview.htm"  # no redirect: the login form re-renders in place
     assert surface.probe(expired)
 
 
 def test_a_bad_account_id_is_a_business_error(page: Page, surface: WebSurface) -> None:
     sign_in(page)
     surface.navigate(f"{BASE_URL}/activity.htm?id=99999")
-    # F5, recorded under the profile's recon notes: a business answer on this page.
+    # Recorded under the profile's recon notes: a business answer on this page.
     not_found = AllCondition(
         all=[
             VisibleCondition(role="heading", name="Error!"),
@@ -159,7 +159,7 @@ def test_select_by_label_then_by_value(page: Page, surface: WebSurface) -> None:
     open_form(page, surface)
     account_type = page.locator("select#type")
     surface.act("select", account_type, "SAVINGS")
-    assert account_type.input_value() == "1"  # labelled SAVINGS, valued 1 (F8)
+    assert account_type.input_value() == "1"  # labelled SAVINGS, valued 1
     funding = page.locator("select#fromAccountId")
     surface.act("select", funding, "13344")
     assert funding.input_value() == "13344"
@@ -392,7 +392,7 @@ def test_a_dialog_with_a_rule_gets_that_answer_and_does_not_block(
     assert surface.pending_dialog == ("confirm", "Delete?")
 
 
-# --- regressions from the M3 review ------------------------------------------------------
+# --- regressions from a code review ----------------------------------------------------------
 
 
 def test_a_re_render_between_resolve_and_act_is_refused_not_clicked(

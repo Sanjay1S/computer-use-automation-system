@@ -72,7 +72,8 @@ def test_screenshot_masking_is_available(page: Page) -> None:
 def test_route_handlers_never_see_redirect_hops(
     context: BrowserContext, loopback: Loopback
 ) -> None:
-    """Why the policy gate also emits Chromium resolver rules (plan §18.3 D6)."""
+    """Why the policy gate also emits Chromium resolver rules: route handlers never
+    see redirect hops."""
     routed: list[str] = []
 
     def record(route: Route) -> None:
