@@ -75,6 +75,17 @@ def test_approve_binds_the_approval_to_the_content_hash(artifact: Path, tmp_path
     assert approved.lifecycle.approved_hash == content_hash(approved)
 
 
+def test_approve_out_may_be_a_directory(artifact: Path, tmp_path: Path) -> None:
+    result = runner.invoke(
+        app, ["approve", str(artifact), "--reviewer", "A Reviewer", "--out", str(tmp_path)]
+    )
+
+    assert result.exit_code == 0
+    approved_files = sorted(tmp_path.glob("*@*.json"))
+    assert len(approved_files) == 1
+    assert load(approved_files[0]).lifecycle.status == "approved"
+
+
 def test_approve_refuses_an_artifact_with_lint_errors(artifact: Path, tmp_path: Path) -> None:
     broken = json.loads(artifact.read_text())
     broken["steps"][3]["retry"] = {"max_attempts": 3, "backoff_ms": [1, 2, 3]}

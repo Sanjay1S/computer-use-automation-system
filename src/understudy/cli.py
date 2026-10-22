@@ -98,7 +98,11 @@ def approve_command(
     artifact: Annotated[Path, typer.Argument(help="Path to a capability JSON file.")],
     reviewer: Annotated[str, typer.Option("--reviewer", help="Who reviewed it.")],
     out: Annotated[
-        Path | None, typer.Option("--out", help="Where to write it. Default: capabilities/.")
+        Path | None,
+        typer.Option(
+            "--out",
+            help="A file, or a directory to put <id>@<version>.json in. Default: capabilities/.",
+        ),
     ] = None,
 ) -> None:
     """Approve an artifact, binding the approval to its content hash."""
@@ -115,7 +119,8 @@ def approve_command(
     capability.lifecycle.approved_at = datetime.now(UTC)
     capability.lifecycle.approved_hash = hashing.content_hash(capability)
 
-    destination = out or CAPABILITIES / f"{capability.id}@{capability.version}.json"
+    filename = f"{capability.id}@{capability.version}.json"
+    destination = (out / filename if out.is_dir() else out) if out else CAPABILITIES / filename
     hashing.save(capability, destination)
     typer.echo(f"approved {capability.id}@{capability.version}")
     typer.echo(f"  hash {capability.lifecycle.approved_hash}")
