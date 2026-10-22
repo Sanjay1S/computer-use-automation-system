@@ -70,7 +70,7 @@
 (() => {
   const HINTS = {
     approval: "Approve to let automation run this commit once, with exactly these inputs. Deny to stop before it.",
-    takeover: "Claim to take the live browser window. Commits stay blocked while you hold it: resume and automation runs the commit step itself. Complete only when the page shows the task's success state.",
+    takeover: "1. Claim. 2. Do what is needed in the browser window the run opened (the same session; the picture here cannot be clicked, and a headless run has no window to act in). 3. Resume. Anything you do before claiming is not recorded as yours. Commits stay blocked while you hold the session: resume and automation runs the commit step itself. Complete only when the page shows the task's success state.",
     verify_commit: "The commit may have gone through. Check the app; never submit it again. Complete if the page shows the success state; otherwise abort and note what you found.",
   };
   const $ = (id) => document.getElementById(id);
@@ -172,7 +172,8 @@
       el("div", { class: "row" }, el("h2", {}, iv.kind.replace("_", " ")),
         el("span", { class: "badge" }, iv.status), el("code", { class: "muted" }, iv.id)),
       iv.status !== "closed" ? el("div", { class: "hint" }, HINTS[iv.kind]) : null,
-      el("div", { class: "grid" }, el("div", {}, facts, controls, events), el("div", {}, shot)));
+      el("div", { class: "grid" }, el("div", {}, facts, controls, events),
+        el("div", {}, shot, live ? el("p", { class: "muted" }, "View-only screenshot, refreshed every 2 s. Act in the browser window, not here.") : null)));
   }
 
   async function refresh() {
