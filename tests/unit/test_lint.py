@@ -431,3 +431,38 @@ _ALL_MUTATIONS: list[Callable[[Capability], None]] = [
     lambda c: setattr(c.steps[0], "url", "http://localhost:8089/openaccount.htm"),
     lambda c: setattr(c.outcomes[0], "detected_by", "s99_missing"),
 ]
+
+
+def test_l013_a_fallback_that_ignores_the_input_beside_one_that_uses_it() -> None:
+    capability = example_capability()
+    step = next(s for s in capability.steps if s.target is not None)
+    assert step.target is not None
+    keyed = Locator(
+        by="table_cell",
+        value={
+            "table": "table#t",
+            "column": "Balance",
+            "key_column": "Account",
+            "row_key": "{funding_account_id}",
+        },
+        stability="medium",
+        note="by the row key",
+        templated=True,
+        verified=Verification(unique=True, same_element=True, run_id="t"),
+    )
+    positional = Locator(
+        by="css",
+        value="#t > tbody > tr:nth-of-type(1) > td:nth-of-type(2)",
+        stability="low",
+        note="by position",
+        verified=Verification(unique=True, same_element=True, run_id="t"),
+    )
+    step.target.locators = [keyed, positional]
+
+    findings = [f for f in lint(capability).findings if f.code == "L013"]
+    assert [(f.severity, f.where) for f in findings] == [
+        ("error", f"steps.{step.id}.target.locators[1]")
+    ]
+
+    step.target.locators = [keyed]
+    assert "L013" not in _codes(capability)

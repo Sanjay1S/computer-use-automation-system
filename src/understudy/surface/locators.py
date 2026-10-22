@@ -678,6 +678,21 @@ def _template_all(
             if changed
             else locator
         )
+    # When a locator finds the element through an input (the row whose key is the
+    # account id), the element depends on that input. A locator that does not use the
+    # input, such as a position in a table, finds the recorded row on every run, and
+    # replay would read another record and call it a success. Drop those (lint L013).
+    if any(locator.templated for locator in out):
+        for locator in out:
+            if not locator.templated:
+                notes.append(
+                    (
+                        locator.by,
+                        "dropped: it does not use the input that picks this element, "
+                        "so on replay it would find the recorded one",
+                    )
+                )
+        out = [locator for locator in out if locator.templated]
     return out, notes
 
 

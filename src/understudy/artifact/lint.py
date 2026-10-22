@@ -89,6 +89,7 @@ def lint(
     findings += _l010_baked_in_url(capability)
     findings += _l011_outcome_refs(capability)
     findings += _l012_run_values_in_text(capability, run_values or {})
+    findings += _l013_fallback_ignores_input(capability)
     return LintReport(findings=findings)
 
 
@@ -497,6 +498,33 @@ def _l012_run_values_in_text(capability: Capability, values: Mapping[str, str]) 
                         where,
                     )
                 )
+    return findings
+
+
+def _l013_fallback_ignores_input(capability: Capability) -> list[Finding]:
+    """A target found through an input (the table row whose key is the account id)
+    depends on that input, so every locator in its chain must use it. One that does
+    not (a position in the table) finds the recorded row on every run: when the
+    first locator drifts, replay would read another record and report success. The
+    fingerprint cannot catch it, since every cell looks alike."""
+    findings: list[Finding] = []
+    for step in capability.steps:
+        if step.target is None:
+            continue
+        locators = step.target.locators
+        if any(loc.templated for loc in locators):
+            for i, loc in enumerate(locators):
+                if not loc.templated:
+                    findings.append(
+                        Finding(
+                            "L013",
+                            "error",
+                            f"locator {i} ({loc.by}) does not use the input the other "
+                            "locators find this element by; on replay it would find the "
+                            "recorded element, not the one asked for",
+                            f"steps.{step.id}.target.locators[{i}]",
+                        )
+                    )
     return findings
 
 

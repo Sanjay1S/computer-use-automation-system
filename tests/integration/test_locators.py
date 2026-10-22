@@ -122,6 +122,48 @@ def test_a_row_link_is_templated_on_its_param_and_replays_for_another_row(
     assert via_table.element.inner_text() == "54321"
 
 
+def test_a_cell_found_by_its_row_key_keeps_no_locator_that_ignores_the_key(
+    page: Page, surface: WebSurface
+) -> None:
+    """A balance cell is found by the row whose key is the account id. A positional
+    path (row 1, column 2) also matches it at discovery, but on replay it would read
+    the recorded row for any account: it must not survive into the target."""
+    sign_in(page)
+    surface.navigate(f"{BASE_URL}/overview.htm")
+    cell = page.locator(
+        "xpath=//table[@id='accountTable']//tr[td/a[normalize-space(.)='13344']]/td[2]"
+    )
+    result = surface.synthesize(cell, params={"account_id": "13344"})
+    target = result.target
+    assert target is not None
+    assert target.locators, "the row-keyed locator must survive"
+    assert all(loc.templated for loc in target.locators), kinds(target)
+    assert any(loc.by == "table_cell" for loc in target.locators)
+    assert any(why.startswith("dropped: it does not use the input") for _, why in result.rejected)
+
+    def balance_of(account: str) -> str:
+        return page.locator(
+            f"xpath=//table[@id='accountTable']//tr[td/a[normalize-space(.)='{account}']]/td[2]"
+        ).inner_text()
+
+    other = surface.resolve(target, {"account_id": "12456"})
+    assert other.ok and other.element is not None
+    assert other.element.inner_text() == balance_of("12456")
+
+    # The column header drifts: the row-keyed locator misses, and nothing else may
+    # stand in for it by reading some other row.
+    drifted = [
+        loc.model_copy(update={"value": {**loc.value, "column": "Current Balance"}})
+        if loc.by == "table_cell" and isinstance(loc.value, dict)
+        else loc
+        for loc in target.locators
+    ]
+    missed = surface.resolve(
+        target.model_copy(update={"locators": drifted}), {"account_id": "12456"}
+    )
+    assert not missed.ok
+
+
 def test_legacy_frame_fields_are_found_by_name_and_by_their_label_cell(
     page: Page, surface: WebSurface
 ) -> None:

@@ -33,7 +33,7 @@ cp .env.example .env  # then fill it in; .env is gitignored
 
 ```bash
 make check   # ruff, ruff format --check, mypy (strict, all of src/)
-make test    # 584 tests, about two minutes: no network, API key or Docker
+make test    # 586 tests, about two minutes: no network, API key or Docker
 ```
 
 The suite drives a routed fake origin (`https://fixture.test`) that copies ParaBank's real DOM, plus a scripted fake model that exercises the whole chain (discover, compile, replay) offline. Tests marked `live` (`make test-live`) need the container, credentials and, for one of them, the API key; they are skipped by default.
@@ -98,7 +98,7 @@ The console is a deliberately minimal, mock operator surface: a view-only screen
 
 | Path | What it holds |
 |---|---|
-| `src/understudy/artifact/` | the capability schema, signature DSL, lint rules (L001–L012), content hashing, review and tool-definition export |
+| `src/understudy/artifact/` | the capability schema, signature DSL, lint rules (L001–L013), content hashing, review and tool-definition export |
 | `src/understudy/surface/` | the `Surface` seam and its Playwright implementation: snapshots and refs, locator synthesis and resolution, masked capture, request guard |
 | `src/understudy/discovery/` | the browser-toolset driver, recorder tools, agent loop, stuck detection, and the compiler from trajectory to draft |
 | `src/understudy/replay/` | preflight, the outcome race, recovery, the result contract, and the engine |

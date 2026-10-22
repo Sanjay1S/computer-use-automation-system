@@ -18,7 +18,7 @@ The model discovers; the artifact becomes a reusable capability; deterministic r
 - **Own loop, not the SDK runner:** every step is policy-gated, recorded with the model's stated reason, budgeted (40 turns, 10 min, $5), pausable for a person, and testable with a scripted fake model.
 - **The `Surface` seam.** Neither path touches Playwright directly. A new surface is a new implementation plus new locator kinds; the artifact doesn't change.
 - **Rejected:** a custom tool schema (the trained action space comes free); pixel control for the web (doesn't replay robustly); agent frameworks (they hide the loop and the locator decisions); LLM self-healing in production (see Cuts).
-- **Simple:** one process, sync Python, Pydantic v2, canonical JSON so approval binds to a hash. 584 offline tests, mypy strict.
+- **Simple:** one process, sync Python, Pydantic v2, canonical JSON so approval binds to a hash. 586 offline tests, mypy strict.
 
 ## 2. Artifact schema
 
@@ -43,7 +43,7 @@ A calling agent reads `description`, `inputs`, `outputs`, `side_effects` and `ou
 - **Targets carry a verified fallback chain plus a fingerprint.** Each candidate resolved to exactly one element, *the same one*, at discovery, and carries a stability tag and a note saying why. A fallback must match the fingerprint, so replay never clicks a look-alike.
 - **Every step has its own checkpoint** (`expect`) in a small signature DSL (`visible`, `absent`, `url`, `selected`, `options_loaded`, `dialog`, `http_status`; `all`/`any`/`not`). The success checkpoint has a **negative control**: it must be false on the start state, because ParaBank's result panels sit hidden in the DOM from load and "text is present" would pass before anything happened.
 - **Effect class** (`read` < `input` < `commit`) drives safety. Approval binds to the **content hash**; any edit is a new draft.
-- **Lint L001–L012** runs in the compiler, before approval and at load: vacuous success, sensitive literals, a retried commit, unbound params, unverified targets, policy drift, outputs without extractors, baked-in base URLs or session ids, and (at compile time, when the run's values are known) any of the run's inputs or outputs in free text. Contract prose is written from the checkpoints, never copied from the model.
+- **Lint L001–L013** runs in the compiler, before approval and at load: vacuous success, sensitive literals, a retried commit, unbound params, unverified targets, policy drift, outputs without extractors, baked-in base URLs or session ids, a fallback locator that ignores the input that picks the element (a table position behind a row-key locator would read another record), and (at compile time, when the run's values are known) any of the run's inputs or outputs in free text. Contract prose is written from the checkpoints, never copied from the model.
 
 ## 3. Determinism & error handling
 
