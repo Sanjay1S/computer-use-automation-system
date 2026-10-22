@@ -1,0 +1,32 @@
+{
+  "handoffs": [
+    {
+      "actions": [
+        {
+          "at": "2026-10-22T14:01:13.934000Z",
+          "description": "button 'OK'",
+          "effect": "input",
+          "in_frame": false,
+          "kind": "click",
+          "seq": 1,
+          "url": "http://localhost:8089/parabank/openaccount.htm",
+          "value": null,
+          "verified": false
+        }
+      ],
+      "claimed_at": "2026-10-22T14:01:00.471991Z",
+      "closed_at": "2026-10-22T14:02:31.354995Z",
+      "duration_ms": 314467,
+      "intervention_id": "iv-zvoknpxh",
+      "kind": "takeover",
+      "note": "I closed the pop up",
+      "opened_at": "2026-10-22T13:57:16.885944Z",
+      "operator": "Sanjay Srinivasa",
+      "reason": "unknown_blocking_state",
+      "resolution": "resumed",
+      "resume_from": null,
+      "step_id": "s3_select_funding_account_id",
+      "unexpected_inputs": 0
+    }
+  ]
+}
