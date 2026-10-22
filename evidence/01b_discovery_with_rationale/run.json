@@ -1,0 +1,13 @@
+{
+  "capability": "parabank.open_account",
+  "effort": "high",
+  "kind": "discovery",
+  "model": "claude-opus-5-5",
+  "params": {
+    "account_type": "SAVINGS",
+    "funding_account_id": "••••4"
+  },
+  "run_id": "discovery-20261022T151111Z-ngtvyw",
+  "started_at": "20261022T151111Z",
+  "tenant": "parabank-local"
+}

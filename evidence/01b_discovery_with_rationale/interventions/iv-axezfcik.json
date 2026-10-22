@@ -1,0 +1,196 @@
+{
+  "allowed": [
+    "approve",
+    "deny"
+  ],
+  "artifact_hash": null,
+  "claimed_at": null,
+  "claimed_by": null,
+  "closed_at": "2026-10-22T15:11:54.733472Z",
+  "decision": {
+    "action": "approve",
+    "at": "2026-10-22T15:11:54.603689Z",
+    "note": null,
+    "operator": "Sanjay Srinivasa",
+    "resume_from": null
+  },
+  "detail": "The model wants to run left_click on button 'Open New Account' (this action commits). Page: http://localhost:8089/parabank/openaccount.htm.",
+  "id": "iv-axezfcik",
+  "intent": null,
+  "kind": "approval",
+  "live_screenshot": "interventions/iv-axezfcik.live.png",
+  "opened_at": "2026-10-22T15:11:25.381442Z",
+  "reason": "commit_approval",
+  "recent_events": [
+    {
+      "actor": "system",
+      "data": {},
+      "kind": "act",
+      "member": "login",
+      "ok": true,
+      "run_id": "discovery-20261022T151111Z-ngtvyw",
+      "seq": 1,
+      "ts": "2026-10-22T15:11:12.122221Z"
+    },
+    {
+      "actor": "agent",
+      "data": {
+        "cost_usd": 0.027,
+        "model": "claude-opus-5-5",
+        "stop_reason": "tool_use",
+        "turn": 1
+      },
+      "kind": "decide",
+      "member": "navigate",
+      "rationale": "I'll navigate to the open account page to start.",
+      "run_id": "discovery-20261022T151111Z-ngtvyw",
+      "seq": 2,
+      "ts": "2026-10-22T15:11:15.129390Z"
+    },
+    {
+      "actor": "agent",
+      "data": {
+        "approved": false,
+        "dispatched": false,
+        "effect": "read",
+        "seq": 1,
+        "turn": 1
+      },
+      "duration_ms": 374,
+      "kind": "act",
+      "member": "navigate",
+      "ok": true,
+      "rationale": "I'll navigate to the open account page to start.",
+      "run_id": "discovery-20261022T151111Z-ngtvyw",
+      "seq": 3,
+      "ts": "2026-10-22T15:11:15.504376Z",
+      "url": "http://localhost:8089/parabank/openaccount.htm"
+    },
+    {
+      "actor": "agent",
+      "data": {
+        "cost_usd": 0.0308,
+        "model": "claude-opus-5-5",
+        "stop_reason": "tool_use",
+        "turn": 2
+      },
+      "kind": "decide",
+      "member": "read_page",
+      "rationale": "Reading the page to get form refs.",
+      "run_id": "discovery-20261022T151111Z-ngtvyw",
+      "seq": 4,
+      "ts": "2026-10-22T15:11:17.611696Z"
+    },
+    {
+      "actor": "agent",
+      "data": {
+        "cost_usd": 0.0407,
+        "model": "claude-opus-5-5",
+        "stop_reason": "tool_use",
+        "turn": 3
+      },
+      "kind": "decide",
+      "member": "form_input",
+      "rationale": "Setting the account type to SAVINGS.",
+      "run_id": "discovery-20261022T151111Z-ngtvyw",
+      "seq": 5,
+      "ts": "2026-10-22T15:11:19.901191Z"
+    },
+    {
+      "actor": "agent",
+      "data": {
+        "approved": false,
+        "dispatched": false,
+        "effect": "input",
+        "seq": 2,
+        "turn": 3
+      },
+      "duration_ms": 369,
+      "kind": "act",
+      "member": "form_input",
+      "ok": true,
+      "rationale": "Setting the account type to SAVINGS.",
+      "run_id": "discovery-20261022T151111Z-ngtvyw",
+      "seq": 6,
+      "target": {
+        "description": "combobox 'What type of Account would you like to open?'",
+        "fingerprint": {
+          "role": "combobox",
+          "tag": "select"
+        }
+      },
+      "ts": "2026-10-22T15:11:20.284441Z",
+      "url": "http://localhost:8089/parabank/openaccount.htm",
+      "value": "SAVINGS"
+    },
+    {
+      "actor": "agent",
+      "data": {
+        "cost_usd": 0.0451,
+        "model": "claude-opus-5-5",
+        "stop_reason": "tool_use",
+        "turn": 4
+      },
+      "kind": "decide",
+      "member": "form_input",
+      "rationale": "Selecting funding account ••••4.",
+      "run_id": "discovery-20261022T151111Z-ngtvyw",
+      "seq": 7,
+      "ts": "2026-10-22T15:11:22.814236Z"
+    },
+    {
+      "actor": "agent",
+      "data": {
+        "approved": false,
+        "dispatched": false,
+        "effect": "input",
+        "seq": 3,
+        "turn": 4
+      },
+      "duration_ms": 359,
+      "kind": "act",
+      "member": "form_input",
+      "ok": true,
+      "rationale": "Selecting funding account ••••4.",
+      "run_id": "discovery-20261022T151111Z-ngtvyw",
+      "seq": 8,
+      "target": {
+        "description": "combobox 'A minimum of $100.00 must be deposited into this…'",
+        "fingerprint": {
+          "role": "combobox",
+          "tag": "select"
+        }
+      },
+      "ts": "2026-10-22T15:11:23.184845Z",
+      "url": "http://localhost:8089/parabank/openaccount.htm",
+      "value": "••••4"
+    },
+    {
+      "actor": "agent",
+      "data": {
+        "cost_usd": 0.0489,
+        "model": "claude-opus-5-5",
+        "stop_reason": "tool_use",
+        "turn": 5
+      },
+      "kind": "decide",
+      "member": "left_click",
+      "rationale": "Submitting the form.",
+      "run_id": "discovery-20261022T151111Z-ngtvyw",
+      "seq": 9,
+      "ts": "2026-10-22T15:11:25.329010Z"
+    }
+  ],
+  "resolution": "approved",
+  "resume_points": [],
+  "run_id": "discovery-20261022T151111Z-ngtvyw",
+  "screenshot": "screenshots/004_intervention_commit_approval.png",
+  "status": "closed",
+  "step_id": null,
+  "subject": {
+    "id": "parabank.open_account",
+    "kind": "goal",
+    "version": "1.0.0"
+  },
+  "url": "http://localhost:8089/parabank/openaccount.htm"
+}

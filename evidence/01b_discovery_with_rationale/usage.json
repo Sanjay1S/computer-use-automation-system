@@ -1,0 +1,13 @@
+{
+  "by_model": {
+    "claude-opus-5-5": {
+      "cache_creation_input_tokens": 9094,
+      "cache_read_input_tokens": 45930,
+      "cost_usd": 0.070828,
+      "input_tokens": 18,
+      "output_tokens": 805,
+      "priced_as": null,
+      "requests": 8
+    }
+  }
+}
