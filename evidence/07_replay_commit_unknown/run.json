@@ -1,0 +1,16 @@
+{
+  "artifact_hash": "sha256:c7114ccc5cfabf48f8373f26880980fe6fcb94abd30cf169c12dd90b50994771",
+  "capability": "parabank.open_account",
+  "faults": [
+    "drop_commit_response"
+  ],
+  "inputs": {
+    "account_type": "SAVINGS",
+    "funding_account_id": "••••4"
+  },
+  "kind": "replay",
+  "run_id": "replay-20261022T122530Z-hgipjl",
+  "started_at": "20261022T122530Z",
+  "tenant": "parabank-local",
+  "version": "1.0.0"
+}

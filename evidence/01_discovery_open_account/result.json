@@ -1,0 +1,42 @@
+{
+  "artifact_hash": "sha256:47b48dda759f38dd74895349d2ac9a5c7edb8fcc088d5bc8662910a5ebea1c56",
+  "capability": "parabank.open_account",
+  "code": "declared_success",
+  "draft": "capabilities/drafts/parabank.open_account.json",
+  "handoffs": [
+    {
+      "human_actions": 0,
+      "intervention_id": "iv-jxsubsys",
+      "kind": "approval",
+      "operator": "Sanjay Srinivasa",
+      "reason": "commit_approval",
+      "resolution": "approved",
+      "step_id": null
+    }
+  ],
+  "lint": [],
+  "lint_ok": true,
+  "models_served": [
+    "claude-opus-5-5"
+  ],
+  "notes": [],
+  "reason": "Opened a new SAVINGS account (••••4) funded from account ••••4.",
+  "run_id": "discovery-20261022T121643Z-lgyxrz",
+  "seconds": 21.79,
+  "status": "compiled",
+  "tenant": "parabank-public",
+  "turns": 8,
+  "usage": {
+    "by_model": {
+      "claude-opus-5-5": {
+        "cache_creation_input_tokens": 15210,
+        "cache_read_input_tokens": 37877,
+        "cost_usd": 0.09833740000000002,
+        "input_tokens": 18,
+        "output_tokens": 732,
+        "priced_as": null,
+        "requests": 8
+      }
+    }
+  }
+}

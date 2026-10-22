@@ -1,0 +1,86 @@
+{
+  "artifact_hash": "sha256:c7114ccc5cfabf48f8373f26880980fe6fcb94abd30cf169c12dd90b50994771",
+  "capability": "parabank.open_account",
+  "completed_by": "automation",
+  "drift": [],
+  "escalation": null,
+  "failure": null,
+  "handoffs": [],
+  "outcome": null,
+  "outputs": {
+    "new_account_id": "••••8"
+  },
+  "recoveries": [
+    {
+      "handler": "reauthenticate",
+      "reason": "The session has expired (the login form is showing)",
+      "restarted_from": "s1_go_openaccount",
+      "step_id": "s3_select_funding_account_id"
+    }
+  ],
+  "rejection": null,
+  "run_id": "replay-20261022T122456Z-udiion",
+  "side_effects": {
+    "commit_requests": 1,
+    "commit_state": "committed",
+    "commit_step": "s4_click_open_new_account"
+  },
+  "status": "succeeded",
+  "tenant": "parabank-local",
+  "timings": {
+    "duration_ms": 1621,
+    "finished_at": "2026-10-22T12:24:58.278594Z",
+    "started_at": "2026-10-22T12:24:56.656673Z",
+    "steps": [
+      {
+        "attempt": 0,
+        "duration_ms": 40,
+        "step_id": "s1_go_openaccount",
+        "waited_ms": 0
+      },
+      {
+        "attempt": 0,
+        "duration_ms": 59,
+        "step_id": "s2_select_account_type",
+        "waited_ms": 0
+      },
+      {
+        "attempt": 0,
+        "duration_ms": 308,
+        "step_id": "s3_select_funding_account_id",
+        "waited_ms": 0
+      },
+      {
+        "attempt": 0,
+        "duration_ms": 39,
+        "step_id": "s1_go_openaccount",
+        "waited_ms": 0
+      },
+      {
+        "attempt": 0,
+        "duration_ms": 41,
+        "step_id": "s2_select_account_type",
+        "waited_ms": 0
+      },
+      {
+        "attempt": 0,
+        "duration_ms": 46,
+        "step_id": "s3_select_funding_account_id",
+        "waited_ms": 0
+      },
+      {
+        "attempt": 0,
+        "duration_ms": 213,
+        "step_id": "s4_click_open_new_account",
+        "waited_ms": 0
+      },
+      {
+        "attempt": 0,
+        "duration_ms": 10,
+        "step_id": "s5_read_new_account_id",
+        "waited_ms": 0
+      }
+    ]
+  },
+  "version": "1.0.0"
+}

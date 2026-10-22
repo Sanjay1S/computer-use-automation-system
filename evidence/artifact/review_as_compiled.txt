@@ -1,0 +1,82 @@
+parabank.open_account@1.0.0  Open a new ParaBank account
+  status      draft
+  hash        sha256:47b48dda759f38dd74895349d2ac9a5c7edb8fcc088d5bc8662910a5ebea1c56
+  app         parabank (web), entry /openaccount.htm
+  session     parabank.customer
+  discovered  run discovery-20261022T121643Z-lgyxrz against parabank-public (discovered)
+
+CONTRACT (what a calling agent sees)
+  Opens a new CHECKING or SAVINGS account for the signed-in ParaBank customer, funded by transferring the minimum opening deposit from one of their existing accounts, and returns the new account's id. The funding account must belong to the signed-in customer.
+
+  inputs
+    account_type           enum, CHECKING|SAVINGS
+                           The kind of account to open.
+    funding_account_id     string, ~^\d+$, financial_id
+                           The existing account the opening deposit comes from. Must be one of the signed-in customer's own accounts.
+  outputs
+    new_account_id         string ~^\d+$  from s5_read_new_account_id
+  side effects
+    class commit, not idempotent, approval per_invocation
+    Creates a real account and moves the minimum opening deposit out of the funding account. Running it twice opens two accounts.
+  business outcomes
+    funding_account_id_not_found   at s3_select_funding_account_id: The list of choices loaded, but none of them is the requested funding_account_id. Nothing was committed.
+  recovery
+    retry_transient, reauthenticate, dismiss_interstitial (budget 3)
+
+STEPS  ('!' commits, '·' writes input, blank reads)
+    s1_go_openaccount             navigate                           Go to /openaccount.htm
+      url      {base_url}/openaccount.htm
+      expect   continue                         /openaccount.htm has loaded and the heading 'Open New Account' is showing
+      else     fail(unknown_state)
+               safe re-entry point after session recovery
+  · s2_select_account_type        select    {account_type}           Choose account_type in combobox 'What type of Account would you like to open?'
+      target   combobox 'What type of Account would you like to open?'
+        ok 1st  css        medium select#type
+            A hand-written id (it does not look generated). It survives restyling, not a rewrite of the
+            page.
+        ok 2nd  xpath      medium //p[normalize-space(.)='What type of Account would you like to open?']/following-sibling::select[1]
+            Anchored on the text placed beside the control, because the page gives it no <label> or
+            accessible name. It moves if that text is reworded.
+        ok 3rd  css        low    #openAccountForm > form:nth-of-type(1) > select:nth-of-type(1)
+            Position in the DOM below the nearest stable id. Any layout change breaks it; last resort.
+      waits    options_loaded
+      expect   continue                         The list holds the requested account_type
+      else     fail(unknown_state)
+  · s3_select_funding_account_id  select    {funding_account_id}     Choose funding_account_id in combobox 'A minimum of $250.00 must be deposited into this…'
+      target   combobox 'A minimum of $250.00 must be deposited into this…'
+        ok 1st  css        medium select#fromAccountId
+            A hand-written id (it does not look generated). It survives restyling, not a rewrite of the
+            page.
+        ok 2nd  xpath      low    //p[starts-with(normalize-space(.), 'A minimum of $250.00 must be deposited into this account at')]/following-sibling::select[1]
+            Anchored on the text placed beside the control, because the page gives it no <label> or
+            accessible name. It moves if that text is reworded.
+        ok 3rd  css        low    #openAccountForm > form:nth-of-type(1) > select:nth-of-type(2)
+            Position in the DOM below the nearest stable id. Any layout change breaks it; last resort.
+      waits    options_loaded
+      expect   continue                         The list holds the requested funding_account_id
+      else     fail(unknown_state)
+      absent   business(funding_account_id_not_found)
+  ! s4_click_open_new_account     click                              Click button 'Open New Account'; this commits
+      target   button 'Open New Account'
+        ok 1st  role       high   {'role': 'button', 'name': 'Open New Account', 'exact': True}
+            Role and accessible name, as a user perceives the element. It survives markup changes and
+            moves with the label text.
+        ok 2nd  css        medium input[type='button'][value='Open New Account']
+            The value attribute is the button's label; it moves with it.
+        ok 3rd  css        low    #openAccountForm > form:nth-of-type(1) > div:nth-of-type(1) > input:nth-of-type(1)
+            Position in the DOM below the nearest stable id. Any layout change breaks it; last resort.
+      expect   continue                         The heading 'Account Opened!' is showing
+      else     escalate(commit_outcome_unknown)
+               commit is never retried
+    s5_read_new_account_id        extract                            Read new_account_id from the element showing new_account_id
+      target   the element showing new_account_id
+        ok 1st  css        medium a#newAccountId
+            A hand-written id (it does not look generated). It survives restyling, not a rewrite of the
+            page.
+        ok 2nd  css        low    #openAccountResult > p:nth-of-type(2) > a:nth-of-type(1)
+            Position in the DOM below the nearest stable id. Any layout change breaks it; last resort.
+      expect   continue                         The element showing new_account_id is visible
+      else     fail(unknown_state)
+      extract  new_account_id <- text
+
+LINT  clean

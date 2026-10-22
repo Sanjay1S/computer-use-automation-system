@@ -1,0 +1,500 @@
+{
+  "app": {
+    "compatible_versions": [],
+    "entry_route": "/openaccount.htm",
+    "surface": "web",
+    "vendor_app": "parabank"
+  },
+  "description": "Opens a new CHECKING or SAVINGS account for the signed-in ParaBank customer, funded by transferring the minimum opening deposit from one of their existing accounts, and returns the new account's id. The funding account must belong to the signed-in customer.",
+  "id": "parabank.open_account",
+  "inputs": [
+    {
+      "description": "The kind of account to open.",
+      "enum": [
+        "CHECKING",
+        "SAVINGS"
+      ],
+      "example": "SAVINGS",
+      "name": "account_type",
+      "required": true,
+      "sensitivity": "public",
+      "type": "enum"
+    },
+    {
+      "description": "The existing account the opening deposit comes from. Must be one of the signed-in customer's own accounts.\n",
+      "example": "12345",
+      "name": "funding_account_id",
+      "pattern": "^\\d+$",
+      "required": true,
+      "sensitivity": "financial_id",
+      "type": "string"
+    }
+  ],
+  "lifecycle": {
+    "approved_at": "2026-10-22T12:24:41.721250Z",
+    "approved_hash": "sha256:c7114ccc5cfabf48f8373f26880980fe6fcb94abd30cf169c12dd90b50994771",
+    "reviewed_by": "Sanjay Srinivasa",
+    "status": "approved"
+  },
+  "outcomes": [
+    {
+      "code": "funding_account_id_not_found",
+      "description": "The list of choices loaded, but none of them is the requested funding_account_id. Nothing was committed.",
+      "detected_by": "s3_select_funding_account_id",
+      "terminal": true
+    }
+  ],
+  "outputs": [
+    {
+      "description": "The id of the account that was opened.",
+      "name": "new_account_id",
+      "pattern": "^\\d+$",
+      "sensitivity": "financial_id",
+      "source_step": "s5_read_new_account_id",
+      "type": "string"
+    }
+  ],
+  "provenance": {
+    "authored": "discovered",
+    "discovery_run_id": "discovery-20261022T121643Z-lgyxrz",
+    "goal_template": "Open a new {account_type} account, funded from account {funding_account_id}.",
+    "human_steps": [],
+    "locator_stats": {
+      "locators": 11,
+      "targets": 4,
+      "verified_unique": 11
+    },
+    "models_served": [
+      "claude-opus-5-5"
+    ],
+    "recorded_against": "parabank-public"
+  },
+  "recovery": {
+    "allowed": [
+      "retry_transient",
+      "reauthenticate",
+      "dismiss_interstitial"
+    ],
+    "budget": 3
+  },
+  "requires": {
+    "secrets": [],
+    "session": "parabank.customer"
+  },
+  "schema_version": "understudy.capability/v1",
+  "side_effects": {
+    "approval": "per_invocation",
+    "class": "commit",
+    "description": "Creates a real account and moves the minimum opening deposit out of the funding account. Running it twice opens two accounts.",
+    "idempotent": false
+  },
+  "steps": [
+    {
+      "action": "navigate",
+      "effect": "read",
+      "expect": [
+        {
+          "description": "/openaccount.htm has loaded and the heading 'Open New Account' is showing",
+          "then": {
+            "do": "continue"
+          },
+          "when": {
+            "all": [
+              {
+                "kind": "url",
+                "path_regex": "/openaccount\\.htm$"
+              },
+              {
+                "exact": true,
+                "kind": "visible",
+                "name": "Open New Account",
+                "role": "heading"
+              }
+            ],
+            "kind": "all"
+          }
+        }
+      ],
+      "id": "s1_go_openaccount",
+      "intent": "Go to /openaccount.htm",
+      "reentry_point": true,
+      "retry": {
+        "backoff_ms": [
+          500,
+          1000
+        ],
+        "max_attempts": 2
+      },
+      "timeout_ms": 15000,
+      "url": "{base_url}/openaccount.htm"
+    },
+    {
+      "action": "select",
+      "effect": "input",
+      "expect": [
+        {
+          "description": "The list holds the requested account_type",
+          "then": {
+            "do": "continue"
+          },
+          "when": {
+            "kind": "selected",
+            "param": "account_type",
+            "target": "select#type"
+          }
+        }
+      ],
+      "id": "s2_select_account_type",
+      "intent": "Choose account_type in combobox 'What type of Account would you like to open?'",
+      "reentry_point": false,
+      "retry": {
+        "backoff_ms": [],
+        "max_attempts": 0
+      },
+      "target": {
+        "description": "combobox 'What type of Account would you like to open?'",
+        "fingerprint": {
+          "role": "combobox",
+          "tag": "select"
+        },
+        "frame_path": [],
+        "locators": [
+          {
+            "by": "css",
+            "note": "A hand-written id (it does not look generated). It survives restyling, not a rewrite of the page.",
+            "stability": "medium",
+            "templated": false,
+            "value": "select#type",
+            "verified": {
+              "run_id": "discovery-20261022T121643Z-lgyxrz",
+              "same_element": true,
+              "unique": true
+            }
+          },
+          {
+            "by": "xpath",
+            "note": "Anchored on the text placed beside the control, because the page gives it no <label> or accessible name. It moves if that text is reworded.",
+            "stability": "medium",
+            "templated": false,
+            "value": "//p[normalize-space(.)='What type of Account would you like to open?']/following-sibling::select[1]",
+            "verified": {
+              "run_id": "discovery-20261022T121643Z-lgyxrz",
+              "same_element": true,
+              "unique": true
+            }
+          },
+          {
+            "by": "css",
+            "note": "Position in the DOM below the nearest stable id. Any layout change breaks it; last resort.",
+            "stability": "low",
+            "templated": false,
+            "value": "#openAccountForm > form:nth-of-type(1) > select:nth-of-type(1)",
+            "verified": {
+              "run_id": "discovery-20261022T121643Z-lgyxrz",
+              "same_element": true,
+              "unique": true
+            }
+          }
+        ]
+      },
+      "timeout_ms": 10000,
+      "value": {
+        "param": "account_type"
+      },
+      "wait_before": {
+        "kind": "options_loaded",
+        "min": 1,
+        "target": "select#type"
+      }
+    },
+    {
+      "action": "select",
+      "effect": "input",
+      "expect": [
+        {
+          "description": "The list holds the requested funding_account_id",
+          "then": {
+            "do": "continue"
+          },
+          "when": {
+            "kind": "selected",
+            "param": "funding_account_id",
+            "target": "select#fromAccountId"
+          }
+        }
+      ],
+      "id": "s3_select_funding_account_id",
+      "intent": "Choose funding_account_id in combobox 'A minimum of $250.00 must be deposited into this…'",
+      "on_target_absent": {
+        "outcome": "funding_account_id_not_found"
+      },
+      "reentry_point": false,
+      "retry": {
+        "backoff_ms": [],
+        "max_attempts": 0
+      },
+      "target": {
+        "description": "combobox 'A minimum of $250.00 must be deposited into this…'",
+        "fingerprint": {
+          "role": "combobox",
+          "tag": "select"
+        },
+        "frame_path": [],
+        "locators": [
+          {
+            "by": "css",
+            "note": "A hand-written id (it does not look generated). It survives restyling, not a rewrite of the page.",
+            "stability": "medium",
+            "templated": false,
+            "value": "select#fromAccountId",
+            "verified": {
+              "run_id": "discovery-20261022T121643Z-lgyxrz",
+              "same_element": true,
+              "unique": true
+            }
+          },
+          {
+            "by": "xpath",
+            "note": "Anchored on the text placed beside the control, because the page gives it no <label> or accessible name. It moves if that text is reworded.",
+            "stability": "low",
+            "templated": false,
+            "value": "//p[starts-with(normalize-space(.), 'A minimum of $250.00 must be deposited into this account at')]/following-sibling::select[1]",
+            "verified": {
+              "run_id": "discovery-20261022T121643Z-lgyxrz",
+              "same_element": true,
+              "unique": true
+            }
+          },
+          {
+            "by": "css",
+            "note": "Position in the DOM below the nearest stable id. Any layout change breaks it; last resort.",
+            "stability": "low",
+            "templated": false,
+            "value": "#openAccountForm > form:nth-of-type(1) > select:nth-of-type(2)",
+            "verified": {
+              "run_id": "discovery-20261022T121643Z-lgyxrz",
+              "same_element": true,
+              "unique": true
+            }
+          }
+        ]
+      },
+      "timeout_ms": 10000,
+      "value": {
+        "param": "funding_account_id"
+      },
+      "wait_before": {
+        "kind": "options_loaded",
+        "min": 1,
+        "target": "select#fromAccountId"
+      }
+    },
+    {
+      "action": "click",
+      "effect": "commit",
+      "expect": [
+        {
+          "description": "The heading 'Account Opened!' is showing",
+          "then": {
+            "do": "continue"
+          },
+          "when": {
+            "exact": true,
+            "kind": "visible",
+            "name": "Account Opened!",
+            "role": "heading"
+          }
+        }
+      ],
+      "id": "s4_click_open_new_account",
+      "intent": "Click button 'Open New Account'; this commits",
+      "reentry_point": false,
+      "retry": {
+        "backoff_ms": [],
+        "max_attempts": 0
+      },
+      "target": {
+        "description": "button 'Open New Account'",
+        "fingerprint": {
+          "input_type": "button",
+          "name": "Open New Account",
+          "role": "button",
+          "tag": "input"
+        },
+        "frame_path": [],
+        "locators": [
+          {
+            "by": "role",
+            "note": "Role and accessible name, as a user perceives the element. It survives markup changes and moves with the label text.",
+            "stability": "high",
+            "templated": false,
+            "value": {
+              "exact": true,
+              "name": "Open New Account",
+              "role": "button"
+            },
+            "verified": {
+              "run_id": "discovery-20261022T121643Z-lgyxrz",
+              "same_element": true,
+              "unique": true
+            }
+          },
+          {
+            "by": "css",
+            "note": "The value attribute is the button's label; it moves with it.",
+            "stability": "medium",
+            "templated": false,
+            "value": "input[type='button'][value='Open New Account']",
+            "verified": {
+              "run_id": "discovery-20261022T121643Z-lgyxrz",
+              "same_element": true,
+              "unique": true
+            }
+          },
+          {
+            "by": "css",
+            "note": "Position in the DOM below the nearest stable id. Any layout change breaks it; last resort.",
+            "stability": "low",
+            "templated": false,
+            "value": "#openAccountForm > form:nth-of-type(1) > div:nth-of-type(1) > input:nth-of-type(1)",
+            "verified": {
+              "run_id": "discovery-20261022T121643Z-lgyxrz",
+              "same_element": true,
+              "unique": true
+            }
+          }
+        ]
+      },
+      "timeout_ms": 30000
+    },
+    {
+      "action": "extract",
+      "effect": "read",
+      "expect": [
+        {
+          "description": "The element showing new_account_id is visible",
+          "then": {
+            "do": "continue"
+          },
+          "when": {
+            "css": "a#newAccountId",
+            "exact": true,
+            "kind": "visible"
+          }
+        }
+      ],
+      "extract": {
+        "output": "new_account_id",
+        "parse": "regex",
+        "read": "text",
+        "regex": "^\\s*(\\d+)\\s*$"
+      },
+      "id": "s5_read_new_account_id",
+      "intent": "Read new_account_id from the element showing new_account_id",
+      "reentry_point": false,
+      "retry": {
+        "backoff_ms": [
+          250,
+          500
+        ],
+        "max_attempts": 2
+      },
+      "target": {
+        "description": "the element showing new_account_id",
+        "fingerprint": {
+          "role": "link",
+          "tag": "a"
+        },
+        "frame_path": [],
+        "locators": [
+          {
+            "by": "css",
+            "note": "A hand-written id (it does not look generated). It survives restyling, not a rewrite of the page.",
+            "stability": "medium",
+            "templated": false,
+            "value": "a#newAccountId",
+            "verified": {
+              "run_id": "discovery-20261022T121643Z-lgyxrz",
+              "same_element": true,
+              "unique": true
+            }
+          },
+          {
+            "by": "css",
+            "note": "Position in the DOM below the nearest stable id. Any layout change breaks it; last resort.",
+            "stability": "low",
+            "templated": false,
+            "value": "#openAccountResult > p:nth-of-type(2) > a:nth-of-type(1)",
+            "verified": {
+              "run_id": "discovery-20261022T121643Z-lgyxrz",
+              "same_element": true,
+              "unique": true
+            }
+          }
+        ]
+      },
+      "timeout_ms": 10000
+    }
+  ],
+  "success": {
+    "description": "A new account was opened and its id is shown on the confirmation screen.",
+    "negative_control": {
+      "all": [
+        {
+          "exact": true,
+          "kind": "visible",
+          "name": "Open New Account",
+          "role": "heading"
+        },
+        {
+          "kind": "not",
+          "not": {
+            "all": [
+              {
+                "exact": true,
+                "kind": "visible",
+                "name": "Account Opened!",
+                "role": "heading"
+              },
+              {
+                "css": "#openAccountResult > p:nth-of-type(1)",
+                "exact": true,
+                "kind": "visible"
+              },
+              {
+                "css": "a#newAccountId",
+                "exact": true,
+                "kind": "visible"
+              }
+            ],
+            "kind": "all"
+          }
+        }
+      ],
+      "kind": "all"
+    },
+    "signature": {
+      "all": [
+        {
+          "exact": true,
+          "kind": "visible",
+          "name": "Account Opened!",
+          "role": "heading"
+        },
+        {
+          "css": "#openAccountResult > p:nth-of-type(1)",
+          "exact": true,
+          "kind": "visible"
+        },
+        {
+          "css": "a#newAccountId",
+          "exact": true,
+          "kind": "visible"
+        }
+      ],
+      "kind": "all"
+    }
+  },
+  "title": "Open a new ParaBank account",
+  "version": "1.0.0"
+}

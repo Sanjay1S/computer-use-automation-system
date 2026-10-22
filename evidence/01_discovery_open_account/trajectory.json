@@ -1,0 +1,619 @@
+{
+  "calls": [
+    {
+      "actor": "agent",
+      "after": {
+        "route": "/openaccount.htm",
+        "snapshot": "- generic [active] [ref=ref_130]:\n  - generic [ref=ref_131]:\n    - generic [ref=ref_132]:\n      - link:\n        - /url: admin.htm\n        - img [ref=ref_133] [cursor=pointer]\n      - link \"ParaBank\":\n        - /url: index.htm\n        - img \"ParaBank\" [ref=ref_134] [cursor=pointer]\n      - paragraph [ref=ref_135]: Experience the difference\n    - generic [ref=ref_136]:\n      - list [ref=ref_137]:\n        - listitem [ref=ref_138]: Solutions\n        - listitem [ref=ref_139]:\n          - link \"About Us\" [ref=ref_140] [cursor=pointer]:\n            - /url: about.htm\n        - listitem [ref=ref_141]:\n          - link \"Services\" [ref=ref_142] [cursor=pointer]:\n            - /url: services.htm\n        - listitem [ref=ref_143]:\n          - link \"Products\" [ref=ref_144] [cursor=pointer]:\n            - /url: http://www.parasoft.com/jsp/products.jsp\n        - listitem [ref=ref_145]:\n          - link \"Locations\" [ref=ref_146] [cursor=pointer]:\n            - /url: http://www.parasoft.com/jsp/pr/contacts.jsp\n        - listitem [ref=ref_147]:\n          - link \"Admin Page\" [ref=ref_148] [cursor=pointer]:\n            - /url: admin.htm\n      - list [ref=ref_149]:\n        - listitem [ref=ref_150]:\n          - link \"home\" [ref=ref_151] [cursor=pointer]:\n            - /url: index.htm\n        - listitem [ref=ref_152]:\n          - link \"about\" [ref=ref_153] [cursor=pointer]:\n            - /url: about.htm\n        - listitem [ref=ref_154]:\n          - link \"contact\" [ref=ref_155] [cursor=pointer]:\n            - /url: contact.htm\n    - generic [ref=ref_156]:\n      - generic [ref=ref_157]:\n        - paragraph [ref=ref_158]: [masked]\n        - heading \"Account Services\" [level=2] [ref=ref_159]\n        - list [ref=ref_160]:\n          - listitem [ref=ref_161]:\n            - link \"Open New Account\" [ref=ref_162] [cursor=pointer]:\n              - /url: openaccount.htm\n          - listitem [ref=ref_163]:\n            - link \"Accounts Overview\" [ref=ref_164] [cursor=pointer]:\n              - /url: overview.htm\n          - listitem [ref=ref_165]:\n            - link \"Transfer Funds\" [ref=ref_166] [cursor=pointer]:\n              - /url: transfer.htm\n          - listitem [ref=ref_167]:\n            - link \"Bill Pay\" [ref=ref_168] [cursor=pointer]:\n              - /url: billpay.htm\n          - listitem [ref=ref_169]:\n            - link \"Find Transactions\" [ref=ref_170] [cursor=pointer]:\n              - /url: findtrans.htm\n          - listitem [ref=ref_171]:\n            - link \"Update Contact Info\" [ref=ref_172] [cursor=pointer]:\n              - /url: updateprofile.htm\n          - listitem [ref=ref_173]:\n            - link \"Request Loan\" [ref=ref_174] [cursor=pointer]:\n              - /url: requestloan.htm\n          - listitem [ref=ref_175]:\n            - link \"Log Out\" [ref=ref_176] [cursor=pointer]:\n              - /url: logout.htm\n      - generic [ref=ref_177]:\n        - heading \"Open New Account\" [level=1] [ref=ref_178]\n        - generic [ref=ref_179]:\n          - paragraph [ref=ref_180]: What type of Account would you like to open?\n          - combobox [ref=ref_181]:\n            - option \"CHECKING\" [selected]\n            - option \"SAVINGS\"\n          - paragraph [ref=ref_182]: A minimum of $250.00 must be deposited into this account at time of opening. Please choose an existing account to transfer funds into the new account.\n          - combobox [ref=ref_183]:\n            - option \"[masked]\" [selected]\n            - option \"[masked]\"\n            - option \"[masked]\"\n            - option \"[masked]\"\n            - option \"[masked]\"\n            - option \"[masked]\"\n            - option \"[masked]\"\n            - option \"[masked]\"\n            - option \"[masked]\"\n          - button \"Open New Account\" [ref=ref_184] [cursor=pointer]\n  - generic [ref=ref_185]:\n    - list [ref=ref_186]:\n      - listitem [ref=ref_187]:\n        - link \"Home\" [ref=ref_188] [cursor=pointer]:\n          - /url: index.htm\n        - text: \"|\"\n      - listitem [ref=ref_189]:\n        - link \"About Us\" [ref=ref_190] [cursor=pointer]:\n          - /url: about.htm\n        - text: \"|\"\n      - listitem [ref=ref_191]:\n        - link \"Services\" [ref=ref_192] [cursor=pointer]:\n          - /url: services.htm\n        - text: \"|\"\n      - listitem [ref=ref_193]:\n        - link \"Products\" [ref=ref_194] [cursor=pointer]:\n          - /url: http://www.parasoft.com/jsp/products.jsp\n        - text: \"|\"\n      - listitem [ref=ref_195]:\n        - link \"Locations\" [ref=ref_196] [cursor=pointer]:\n          - /url: http://www.parasoft.com/jsp/pr/contacts.jsp\n        - text: \"|\"\n      - listitem [ref=ref_197]:\n        - link \"Site Map\" [ref=ref_198] [cursor=pointer]:\n          - /url: sitemap.htm\n        - text: \"|\"\n      - listitem [ref=ref_199]:\n        - link \"Contact Us\" [ref=ref_200] [cursor=pointer]:\n          - /url: contact.htm\n    - paragraph [ref=ref_201]: © Parasoft. All rights reserved.\n    - list [ref=ref_202]:\n      - listitem [ref=ref_203]: \"Visit us at:\"\n      - listitem [ref=ref_204]:\n        - link \"www.parasoft.com\" [ref=ref_205] [cursor=pointer]:\n          - /url: http://www.parasoft.com/",
+        "status": 200,
+        "title": "ParaBank | Open Account",
+        "url": "https://parabank.parasoft.com/parabank/openaccount.htm"
+      },
+      "approved": false,
+      "before": {
+        "route": "/overview.htm",
+        "snapshot": "- generic [active] [ref=ref_1]:\n  - generic [ref=ref_2]:\n    - generic [ref=ref_3]:\n      - link:\n        - /url: admin.htm\n        - img [ref=ref_4] [cursor=pointer]\n      - link \"ParaBank\":\n        - /url: index.htm\n        - img \"ParaBank\" [ref=ref_5] [cursor=pointer]\n      - paragraph [ref=ref_6]: Experience the difference\n    - generic [ref=ref_7]:\n      - list [ref=ref_8]:\n        - listitem [ref=ref_9]: Solutions\n        - listitem [ref=ref_10]:\n          - link \"About Us\" [ref=ref_11] [cursor=pointer]:\n            - /url: about.htm\n        - listitem [ref=ref_12]:\n          - link \"Services\" [ref=ref_13] [cursor=pointer]:\n            - /url: services.htm\n        - listitem [ref=ref_14]:\n          - link \"Products\" [ref=ref_15] [cursor=pointer]:\n            - /url: http://www.parasoft.com/jsp/products.jsp\n        - listitem [ref=ref_16]:\n          - link \"Locations\" [ref=ref_17] [cursor=pointer]:\n            - /url: http://www.parasoft.com/jsp/pr/contacts.jsp\n        - listitem [ref=ref_18]:\n          - link \"Admin Page\" [ref=ref_19] [cursor=pointer]:\n            - /url: admin.htm\n      - list [ref=ref_20]:\n        - listitem [ref=ref_21]:\n          - link \"home\" [ref=ref_22] [cursor=pointer]:\n            - /url: index.htm\n        - listitem [ref=ref_23]:\n          - link \"about\" [ref=ref_24] [cursor=pointer]:\n            - /url: about.htm\n        - listitem [ref=ref_25]:\n          - link \"contact\" [ref=ref_26] [cursor=pointer]:\n            - /url: contact.htm\n    - generic [ref=ref_27]:\n      - generic [ref=ref_28]:\n        - paragraph [ref=ref_29]: [masked]\n        - heading \"Account Services\" [level=2] [ref=ref_30]\n        - list [ref=ref_31]:\n          - listitem [ref=ref_32]:\n            - link \"Open New Account\" [ref=ref_33] [cursor=pointer]:\n              - /url: openaccount.htm\n          - listitem [ref=ref_34]:\n            - link \"Accounts Overview\" [ref=ref_35] [cursor=pointer]:\n              - /url: overview.htm\n          - listitem [ref=ref_36]:\n            - link \"Transfer Funds\" [ref=ref_37] [cursor=pointer]:\n              - /url: transfer.htm\n          - listitem [ref=ref_38]:\n            - link \"Bill Pay\" [ref=ref_39] [cursor=pointer]:\n              - /url: billpay.htm\n          - listitem [ref=ref_40]:\n            - link \"Find Transactions\" [ref=ref_41] [cursor=pointer]:\n              - /url: findtrans.htm\n          - listitem [ref=ref_42]:\n            - link \"Update Contact Info\" [ref=ref_43] [cursor=pointer]:\n              - /url: updateprofile.htm\n          - listitem [ref=ref_44]:\n            - link \"Request Loan\" [ref=ref_45] [cursor=pointer]:\n              - /url: requestloan.htm\n          - listitem [ref=ref_46]:\n            - link \"Log Out\" [ref=ref_47] [cursor=pointer]:\n              - /url: logout.htm\n      - generic [ref=ref_48]:\n        - heading \"Accounts Overview\" [level=1] [ref=ref_49]\n        - table [ref=ref_50]:\n          - rowgroup [ref=ref_51]:\n            - row [ref=ref_52]:\n              - columnheader \"[masked]\" [ref=ref_53]\n              - columnheader \"[masked]\" [ref=ref_54]\n              - columnheader \"[masked]\" [ref=ref_55]\n          - rowgroup [ref=ref_56]:\n            - row [ref=ref_57]:\n              - cell [ref=ref_58]:\n                - link \"[masked]\" [ref=ref_59] [cursor=pointer]:\n                  - /url: activity.htm?id=••••4\n              - cell \"[masked]\" [ref=ref_60]\n              - cell \"[masked]\" [ref=ref_61]\n            - row [ref=ref_62]:\n              - cell [ref=ref_63]:\n                - link \"[masked]\" [ref=ref_64] [cursor=pointer]:\n                  - /url: activity.htm?id=••••9\n              - cell \"[masked]\" [ref=ref_65]\n              - cell \"[masked]\" [ref=ref_66]\n            - row [ref=ref_67]:\n              - cell [ref=ref_68]:\n                - link \"[masked]\" [ref=ref_69] [cursor=pointer]:\n                  - /url: activity.htm?id=••••6\n              - cell \"[masked]\" [ref=ref_70]\n              - cell \"[masked]\" [ref=ref_71]\n            - row [ref=ref_72]:\n              - cell [ref=ref_73]:\n                - link \"[masked]\" [ref=ref_74] [cursor=pointer]:\n                  - /url: activity.htm?id=••••0\n              - cell \"[masked]\" [ref=ref_75]\n              - cell \"[masked]\" [ref=ref_76]\n            - row [ref=ref_77]:\n              - cell [ref=ref_78]:\n                - link \"[masked]\" [ref=ref_79] [cursor=pointer]:\n                  - /url: activity.htm?id=••••9\n              - cell \"[masked]\" [ref=ref_80]\n              - cell \"[masked]\" [ref=ref_81]\n            - row [ref=ref_82]:\n              - cell [ref=ref_83]:\n                - link \"[masked]\" [ref=ref_84] [cursor=pointer]:\n                  - /url: activity.htm?id=••••7\n              - cell \"[masked]\" [ref=ref_85]\n              - cell \"[masked]\" [ref=ref_86]\n            - row [ref=ref_87]:\n              - cell [ref=ref_88]:\n                - link \"[masked]\" [ref=ref_89] [cursor=pointer]:\n                  - /url: activity.htm?id=••••8\n              - cell \"[masked]\" [ref=ref_90]\n              - cell \"[masked]\" [ref=ref_91]\n            - row [ref=ref_92]:\n              - cell [ref=ref_93]:\n                - link \"[masked]\" [ref=ref_94] [cursor=pointer]:\n                  - /url: activity.htm?id=••••2\n              - cell \"[masked]\" [ref=ref_95]\n              - cell \"[masked]\" [ref=ref_96]\n            - row [ref=ref_97]:\n              - cell [ref=ref_98]:\n                - link \"[masked]\" [ref=ref_99] [cursor=pointer]:\n                  - /url: activity.htm?id=••••8\n              - cell \"[masked]\" [ref=ref_100]\n              - cell \"[masked]\" [ref=ref_101]\n            - row [ref=ref_102]:\n              - cell \"[masked]\" [ref=ref_103]\n              - cell \"[masked]\" [ref=ref_104]\n              - cell [ref=ref_105]\n          - rowgroup [ref=ref_106]:\n            - row [ref=ref_107]:\n              - cell \"[masked]\" [ref=ref_108]\n  - generic [ref=ref_109]:\n    - list [ref=ref_110]:\n      - listitem [ref=ref_111]:\n        - link \"Home\" [ref=ref_112] [cursor=pointer]:\n          - /url: index.htm\n        - text: \"|\"\n      - listitem [ref=ref_113]:\n        - link \"About Us\" [ref=ref_114] [cursor=pointer]:\n          - /url: about.htm\n        - text: \"|\"\n      - listitem [ref=ref_115]:\n        - link \"Services\" [ref=ref_116] [cursor=pointer]:\n          - /url: services.htm\n        - text: \"|\"\n      - listitem [ref=ref_117]:\n        - link \"Products\" [ref=ref_118] [cursor=pointer]:\n          - /url: http://www.parasoft.com/jsp/products.jsp\n        - text: \"|\"\n      - listitem [ref=ref_119]:\n        - link \"Locations\" [ref=ref_120] [cursor=pointer]:\n          - /url: http://www.parasoft.com/jsp/pr/contacts.jsp\n        - text: \"|\"\n      - listitem [ref=ref_121]:\n        - link \"Site Map\" [ref=ref_122] [cursor=pointer]:\n          - /url: sitemap.htm\n        - text: \"|\"\n      - listitem [ref=ref_123]:\n        - link \"Contact Us\" [ref=ref_124] [cursor=pointer]:\n          - /url: contact.htm\n    - paragraph [ref=ref_125]: © Parasoft. All rights reserved.\n    - list [ref=ref_126]:\n      - listitem [ref=ref_127]: \"Visit us at:\"\n      - listitem [ref=ref_128]:\n        - link \"www.parasoft.com\" [ref=ref_129] [cursor=pointer]:\n          - /url: http://www.parasoft.com/",
+        "status": 200,
+        "title": "ParaBank | Accounts Overview",
+        "url": "https://parabank.parasoft.com/parabank/overview.htm"
+      },
+      "dispatched": false,
+      "duration_ms": 582,
+      "effect": "read",
+      "element": null,
+      "error": null,
+      "key": null,
+      "member": "navigate",
+      "observed_after": {
+        "route": "/openaccount.htm",
+        "snapshot": "- generic [active] [ref=ref_130]:\n  - generic [ref=ref_131]:\n    - generic [ref=ref_132]:\n      - link:\n        - /url: admin.htm\n        - img [ref=ref_133] [cursor=pointer]\n      - link \"ParaBank\":\n        - /url: index.htm\n        - img \"ParaBank\" [ref=ref_134] [cursor=pointer]\n      - paragraph [ref=ref_135]: Experience the difference\n    - generic [ref=ref_136]:\n      - list [ref=ref_137]:\n        - listitem [ref=ref_138]: Solutions\n        - listitem [ref=ref_139]:\n          - link \"About Us\" [ref=ref_140] [cursor=pointer]:\n            - /url: about.htm\n        - listitem [ref=ref_141]:\n          - link \"Services\" [ref=ref_142] [cursor=pointer]:\n            - /url: services.htm\n        - listitem [ref=ref_143]:\n          - link \"Products\" [ref=ref_144] [cursor=pointer]:\n            - /url: http://www.parasoft.com/jsp/products.jsp\n        - listitem [ref=ref_145]:\n          - link \"Locations\" [ref=ref_146] [cursor=pointer]:\n            - /url: http://www.parasoft.com/jsp/pr/contacts.jsp\n        - listitem [ref=ref_147]:\n          - link \"Admin Page\" [ref=ref_148] [cursor=pointer]:\n            - /url: admin.htm\n      - list [ref=ref_149]:\n        - listitem [ref=ref_150]:\n          - link \"home\" [ref=ref_151] [cursor=pointer]:\n            - /url: index.htm\n        - listitem [ref=ref_152]:\n          - link \"about\" [ref=ref_153] [cursor=pointer]:\n            - /url: about.htm\n        - listitem [ref=ref_154]:\n          - link \"contact\" [ref=ref_155] [cursor=pointer]:\n            - /url: contact.htm\n    - generic [ref=ref_156]:\n      - generic [ref=ref_157]:\n        - paragraph [ref=ref_158]: [masked]\n        - heading \"Account Services\" [level=2] [ref=ref_159]\n        - list [ref=ref_160]:\n          - listitem [ref=ref_161]:\n            - link \"Open New Account\" [ref=ref_162] [cursor=pointer]:\n              - /url: openaccount.htm\n          - listitem [ref=ref_163]:\n            - link \"Accounts Overview\" [ref=ref_164] [cursor=pointer]:\n              - /url: overview.htm\n          - listitem [ref=ref_165]:\n            - link \"Transfer Funds\" [ref=ref_166] [cursor=pointer]:\n              - /url: transfer.htm\n          - listitem [ref=ref_167]:\n            - link \"Bill Pay\" [ref=ref_168] [cursor=pointer]:\n              - /url: billpay.htm\n          - listitem [ref=ref_169]:\n            - link \"Find Transactions\" [ref=ref_170] [cursor=pointer]:\n              - /url: findtrans.htm\n          - listitem [ref=ref_171]:\n            - link \"Update Contact Info\" [ref=ref_172] [cursor=pointer]:\n              - /url: updateprofile.htm\n          - listitem [ref=ref_173]:\n            - link \"Request Loan\" [ref=ref_174] [cursor=pointer]:\n              - /url: requestloan.htm\n          - listitem [ref=ref_175]:\n            - link \"Log Out\" [ref=ref_176] [cursor=pointer]:\n              - /url: logout.htm\n      - generic [ref=ref_177]:\n        - heading \"Open New Account\" [level=1] [ref=ref_178]\n        - generic [ref=ref_179]:\n          - paragraph [ref=ref_180]: What type of Account would you like to open?\n          - combobox [ref=ref_181]:\n            - option \"CHECKING\" [selected]\n            - option \"SAVINGS\"\n          - paragraph [ref=ref_182]: A minimum of $250.00 must be deposited into this account at time of opening. Please choose an existing account to transfer funds into the new account.\n          - combobox [ref=ref_183]:\n            - option \"[masked]\" [selected]\n            - option \"[masked]\"\n            - option \"[masked]\"\n            - option \"[masked]\"\n            - option \"[masked]\"\n            - option \"[masked]\"\n            - option \"[masked]\"\n            - option \"[masked]\"\n            - option \"[masked]\"\n          - button \"Open New Account\" [ref=ref_184] [cursor=pointer]\n  - generic [ref=ref_185]:\n    - list [ref=ref_186]:\n      - listitem [ref=ref_187]:\n        - link \"Home\" [ref=ref_188] [cursor=pointer]:\n          - /url: index.htm\n        - text: \"|\"\n      - listitem [ref=ref_189]:\n        - link \"About Us\" [ref=ref_190] [cursor=pointer]:\n          - /url: about.htm\n        - text: \"|\"\n      - listitem [ref=ref_191]:\n        - link \"Services\" [ref=ref_192] [cursor=pointer]:\n          - /url: services.htm\n        - text: \"|\"\n      - listitem [ref=ref_193]:\n        - link \"Products\" [ref=ref_194] [cursor=pointer]:\n          - /url: http://www.parasoft.com/jsp/products.jsp\n        - text: \"|\"\n      - listitem [ref=ref_195]:\n        - link \"Locations\" [ref=ref_196] [cursor=pointer]:\n          - /url: http://www.parasoft.com/jsp/pr/contacts.jsp\n        - text: \"|\"\n      - listitem [ref=ref_197]:\n        - link \"Site Map\" [ref=ref_198] [cursor=pointer]:\n          - /url: sitemap.htm\n        - text: \"|\"\n      - listitem [ref=ref_199]:\n        - link \"Contact Us\" [ref=ref_200] [cursor=pointer]:\n          - /url: contact.htm\n    - paragraph [ref=ref_201]: © Parasoft. All rights reserved.\n    - list [ref=ref_202]:\n      - listitem [ref=ref_203]: \"Visit us at:\"\n      - listitem [ref=ref_204]:\n        - link \"www.parasoft.com\" [ref=ref_205] [cursor=pointer]:\n          - /url: http://www.parasoft.com/",
+        "status": 200,
+        "title": "ParaBank | Open Account",
+        "url": "https://parabank.parasoft.com/parabank/openaccount.htm"
+      },
+      "ok": true,
+      "rationale": null,
+      "seq": 1,
+      "turn": 1,
+      "url": "https://parabank.parasoft.com/parabank/openaccount.htm",
+      "value": null
+    },
+    {
+      "actor": "agent",
+      "after": {
+        "route": "/openaccount.htm",
+        "snapshot": "- generic [active] [ref=ref_130]:\n  - generic [ref=ref_131]:\n    - generic [ref=ref_132]:\n      - link:\n        - /url: admin.htm\n        - img [ref=ref_133] [cursor=pointer]\n      - link \"ParaBank\":\n        - /url: index.htm\n        - img \"ParaBank\" [ref=ref_134] [cursor=pointer]\n      - paragraph [ref=ref_135]: Experience the difference\n    - generic [ref=ref_136]:\n      - list [ref=ref_137]:\n        - listitem [ref=ref_138]: Solutions\n        - listitem [ref=ref_139]:\n          - link \"About Us\" [ref=ref_140] [cursor=pointer]:\n            - /url: about.htm\n        - listitem [ref=ref_141]:\n          - link \"Services\" [ref=ref_142] [cursor=pointer]:\n            - /url: services.htm\n        - listitem [ref=ref_143]:\n          - link \"Products\" [ref=ref_144] [cursor=pointer]:\n            - /url: http://www.parasoft.com/jsp/products.jsp\n        - listitem [ref=ref_145]:\n          - link \"Locations\" [ref=ref_146] [cursor=pointer]:\n            - /url: http://www.parasoft.com/jsp/pr/contacts.jsp\n        - listitem [ref=ref_147]:\n          - link \"Admin Page\" [ref=ref_148] [cursor=pointer]:\n            - /url: admin.htm\n      - list [ref=ref_149]:\n        - listitem [ref=ref_150]:\n          - link \"home\" [ref=ref_151] [cursor=pointer]:\n            - /url: index.htm\n        - listitem [ref=ref_152]:\n          - link \"about\" [ref=ref_153] [cursor=pointer]:\n            - /url: about.htm\n        - listitem [ref=ref_154]:\n          - link \"contact\" [ref=ref_155] [cursor=pointer]:\n            - /url: contact.htm\n    - generic [ref=ref_156]:\n      - generic [ref=ref_157]:\n        - paragraph [ref=ref_158]: [masked]\n        - heading \"Account Services\" [level=2] [ref=ref_159]\n        - list [ref=ref_160]:\n          - listitem [ref=ref_161]:\n            - link \"Open New Account\" [ref=ref_162] [cursor=pointer]:\n              - /url: openaccount.htm\n          - listitem [ref=ref_163]:\n            - link \"Accounts Overview\" [ref=ref_164] [cursor=pointer]:\n              - /url: overview.htm\n          - listitem [ref=ref_165]:\n            - link \"Transfer Funds\" [ref=ref_166] [cursor=pointer]:\n              - /url: transfer.htm\n          - listitem [ref=ref_167]:\n            - link \"Bill Pay\" [ref=ref_168] [cursor=pointer]:\n              - /url: billpay.htm\n          - listitem [ref=ref_169]:\n            - link \"Find Transactions\" [ref=ref_170] [cursor=pointer]:\n              - /url: findtrans.htm\n          - listitem [ref=ref_171]:\n            - link \"Update Contact Info\" [ref=ref_172] [cursor=pointer]:\n              - /url: updateprofile.htm\n          - listitem [ref=ref_173]:\n            - link \"Request Loan\" [ref=ref_174] [cursor=pointer]:\n              - /url: requestloan.htm\n          - listitem [ref=ref_175]:\n            - link \"Log Out\" [ref=ref_176] [cursor=pointer]:\n              - /url: logout.htm\n      - generic [ref=ref_177]:\n        - heading \"Open New Account\" [level=1] [ref=ref_178]\n        - generic [ref=ref_179]:\n          - paragraph [ref=ref_180]: What type of Account would you like to open?\n          - combobox [ref=ref_181]:\n            - option \"CHECKING\"\n            - option \"SAVINGS\" [selected]\n          - paragraph [ref=ref_182]: A minimum of $250.00 must be deposited into this account at time of opening. Please choose an existing account to transfer funds into the new account.\n          - combobox [ref=ref_183]:\n            - option \"[masked]\" [selected]\n            - option \"[masked]\"\n            - option \"[masked]\"\n            - option \"[masked]\"\n            - option \"[masked]\"\n            - option \"[masked]\"\n            - option \"[masked]\"\n            - option \"[masked]\"\n            - option \"[masked]\"\n          - button \"Open New Account\" [ref=ref_184] [cursor=pointer]\n  - generic [ref=ref_185]:\n    - list [ref=ref_186]:\n      - listitem [ref=ref_187]:\n        - link \"Home\" [ref=ref_188] [cursor=pointer]:\n          - /url: index.htm\n        - text: \"|\"\n      - listitem [ref=ref_189]:\n        - link \"About Us\" [ref=ref_190] [cursor=pointer]:\n          - /url: about.htm\n        - text: \"|\"\n      - listitem [ref=ref_191]:\n        - link \"Services\" [ref=ref_192] [cursor=pointer]:\n          - /url: services.htm\n        - text: \"|\"\n      - listitem [ref=ref_193]:\n        - link \"Products\" [ref=ref_194] [cursor=pointer]:\n          - /url: http://www.parasoft.com/jsp/products.jsp\n        - text: \"|\"\n      - listitem [ref=ref_195]:\n        - link \"Locations\" [ref=ref_196] [cursor=pointer]:\n          - /url: http://www.parasoft.com/jsp/pr/contacts.jsp\n        - text: \"|\"\n      - listitem [ref=ref_197]:\n        - link \"Site Map\" [ref=ref_198] [cursor=pointer]:\n          - /url: sitemap.htm\n        - text: \"|\"\n      - listitem [ref=ref_199]:\n        - link \"Contact Us\" [ref=ref_200] [cursor=pointer]:\n          - /url: contact.htm\n    - paragraph [ref=ref_201]: © Parasoft. All rights reserved.\n    - list [ref=ref_202]:\n      - listitem [ref=ref_203]: \"Visit us at:\"\n      - listitem [ref=ref_204]:\n        - link \"www.parasoft.com\" [ref=ref_205] [cursor=pointer]:\n          - /url: http://www.parasoft.com/",
+        "status": 200,
+        "title": "ParaBank | Open Account",
+        "url": "https://parabank.parasoft.com/parabank/openaccount.htm"
+      },
+      "approved": false,
+      "before": {
+        "route": "/openaccount.htm",
+        "snapshot": "- generic [active] [ref=ref_130]:\n  - generic [ref=ref_131]:\n    - generic [ref=ref_132]:\n      - link:\n        - /url: admin.htm\n        - img [ref=ref_133] [cursor=pointer]\n      - link \"ParaBank\":\n        - /url: index.htm\n        - img \"ParaBank\" [ref=ref_134] [cursor=pointer]\n      - paragraph [ref=ref_135]: Experience the difference\n    - generic [ref=ref_136]:\n      - list [ref=ref_137]:\n        - listitem [ref=ref_138]: Solutions\n        - listitem [ref=ref_139]:\n          - link \"About Us\" [ref=ref_140] [cursor=pointer]:\n            - /url: about.htm\n        - listitem [ref=ref_141]:\n          - link \"Services\" [ref=ref_142] [cursor=pointer]:\n            - /url: services.htm\n        - listitem [ref=ref_143]:\n          - link \"Products\" [ref=ref_144] [cursor=pointer]:\n            - /url: http://www.parasoft.com/jsp/products.jsp\n        - listitem [ref=ref_145]:\n          - link \"Locations\" [ref=ref_146] [cursor=pointer]:\n            - /url: http://www.parasoft.com/jsp/pr/contacts.jsp\n        - listitem [ref=ref_147]:\n          - link \"Admin Page\" [ref=ref_148] [cursor=pointer]:\n            - /url: admin.htm\n      - list [ref=ref_149]:\n        - listitem [ref=ref_150]:\n          - link \"home\" [ref=ref_151] [cursor=pointer]:\n            - /url: index.htm\n        - listitem [ref=ref_152]:\n          - link \"about\" [ref=ref_153] [cursor=pointer]:\n            - /url: about.htm\n        - listitem [ref=ref_154]:\n          - link \"contact\" [ref=ref_155] [cursor=pointer]:\n            - /url: contact.htm\n    - generic [ref=ref_156]:\n      - generic [ref=ref_157]:\n        - paragraph [ref=ref_158]: [masked]\n        - heading \"Account Services\" [level=2] [ref=ref_159]\n        - list [ref=ref_160]:\n          - listitem [ref=ref_161]:\n            - link \"Open New Account\" [ref=ref_162] [cursor=pointer]:\n              - /url: openaccount.htm\n          - listitem [ref=ref_163]:\n            - link \"Accounts Overview\" [ref=ref_164] [cursor=pointer]:\n              - /url: overview.htm\n          - listitem [ref=ref_165]:\n            - link \"Transfer Funds\" [ref=ref_166] [cursor=pointer]:\n              - /url: transfer.htm\n          - listitem [ref=ref_167]:\n            - link \"Bill Pay\" [ref=ref_168] [cursor=pointer]:\n              - /url: billpay.htm\n          - listitem [ref=ref_169]:\n            - link \"Find Transactions\" [ref=ref_170] [cursor=pointer]:\n              - /url: findtrans.htm\n          - listitem [ref=ref_171]:\n            - link \"Update Contact Info\" [ref=ref_172] [cursor=pointer]:\n              - /url: updateprofile.htm\n          - listitem [ref=ref_173]:\n            - link \"Request Loan\" [ref=ref_174] [cursor=pointer]:\n              - /url: requestloan.htm\n          - listitem [ref=ref_175]:\n            - link \"Log Out\" [ref=ref_176] [cursor=pointer]:\n              - /url: logout.htm\n      - generic [ref=ref_177]:\n        - heading \"Open New Account\" [level=1] [ref=ref_178]\n        - generic [ref=ref_179]:\n          - paragraph [ref=ref_180]: What type of Account would you like to open?\n          - combobox [ref=ref_181]:\n            - option \"CHECKING\" [selected]\n            - option \"SAVINGS\"\n          - paragraph [ref=ref_182]: A minimum of $250.00 must be deposited into this account at time of opening. Please choose an existing account to transfer funds into the new account.\n          - combobox [ref=ref_183]:\n            - option \"[masked]\" [selected]\n            - option \"[masked]\"\n            - option \"[masked]\"\n            - option \"[masked]\"\n            - option \"[masked]\"\n            - option \"[masked]\"\n            - option \"[masked]\"\n            - option \"[masked]\"\n            - option \"[masked]\"\n          - button \"Open New Account\" [ref=ref_184] [cursor=pointer]\n  - generic [ref=ref_185]:\n    - list [ref=ref_186]:\n      - listitem [ref=ref_187]:\n        - link \"Home\" [ref=ref_188] [cursor=pointer]:\n          - /url: index.htm\n        - text: \"|\"\n      - listitem [ref=ref_189]:\n        - link \"About Us\" [ref=ref_190] [cursor=pointer]:\n          - /url: about.htm\n        - text: \"|\"\n      - listitem [ref=ref_191]:\n        - link \"Services\" [ref=ref_192] [cursor=pointer]:\n          - /url: services.htm\n        - text: \"|\"\n      - listitem [ref=ref_193]:\n        - link \"Products\" [ref=ref_194] [cursor=pointer]:\n          - /url: http://www.parasoft.com/jsp/products.jsp\n        - text: \"|\"\n      - listitem [ref=ref_195]:\n        - link \"Locations\" [ref=ref_196] [cursor=pointer]:\n          - /url: http://www.parasoft.com/jsp/pr/contacts.jsp\n        - text: \"|\"\n      - listitem [ref=ref_197]:\n        - link \"Site Map\" [ref=ref_198] [cursor=pointer]:\n          - /url: sitemap.htm\n        - text: \"|\"\n      - listitem [ref=ref_199]:\n        - link \"Contact Us\" [ref=ref_200] [cursor=pointer]:\n          - /url: contact.htm\n    - paragraph [ref=ref_201]: © Parasoft. All rights reserved.\n    - list [ref=ref_202]:\n      - listitem [ref=ref_203]: \"Visit us at:\"\n      - listitem [ref=ref_204]:\n        - link \"www.parasoft.com\" [ref=ref_205] [cursor=pointer]:\n          - /url: http://www.parasoft.com/",
+        "status": 200,
+        "title": "ParaBank | Open Account",
+        "url": "https://parabank.parasoft.com/parabank/openaccount.htm"
+      },
+      "dispatched": false,
+      "duration_ms": 397,
+      "effect": "input",
+      "element": {
+        "description": "combobox 'What type of Account would you like to open?'",
+        "input_type": null,
+        "name": null,
+        "rejected": [],
+        "role": "combobox",
+        "selected": [
+          "1",
+          "SAVINGS"
+        ],
+        "sensitivity": "public",
+        "tag": "select",
+        "target": {
+          "description": "combobox 'What type of Account would you like to open?'",
+          "fingerprint": {
+            "input_type": null,
+            "label": null,
+            "name": null,
+            "role": "combobox",
+            "tag": "select"
+          },
+          "frame_path": [],
+          "locators": [
+            {
+              "by": "css",
+              "note": "A hand-written id (it does not look generated). It survives restyling, not a rewrite of the page.",
+              "stability": "medium",
+              "templated": false,
+              "value": "select#type",
+              "verified": {
+                "run_id": "discovery-20261022T121643Z-lgyxrz",
+                "same_element": true,
+                "unique": true
+              }
+            },
+            {
+              "by": "xpath",
+              "note": "Anchored on the text placed beside the control, because the page gives it no <label> or accessible name. It moves if that text is reworded.",
+              "stability": "medium",
+              "templated": false,
+              "value": "//p[normalize-space(.)='What type of Account would you like to open?']/following-sibling::select[1]",
+              "verified": {
+                "run_id": "discovery-20261022T121643Z-lgyxrz",
+                "same_element": true,
+                "unique": true
+              }
+            },
+            {
+              "by": "css",
+              "note": "Position in the DOM below the nearest stable id. Any layout change breaks it; last resort.",
+              "stability": "low",
+              "templated": false,
+              "value": "#openAccountForm > form:nth-of-type(1) > select:nth-of-type(1)",
+              "verified": {
+                "run_id": "discovery-20261022T121643Z-lgyxrz",
+                "same_element": true,
+                "unique": true
+              }
+            }
+          ],
+          "scope": null
+        }
+      },
+      "error": null,
+      "key": null,
+      "member": "form_input",
+      "observed_after": null,
+      "ok": true,
+      "rationale": null,
+      "seq": 2,
+      "turn": 3,
+      "url": null,
+      "value": {
+        "literal": null,
+        "param": "account_type",
+        "sensitivity": "public"
+      }
+    },
+    {
+      "actor": "agent",
+      "after": {
+        "route": "/openaccount.htm",
+        "snapshot": "- generic [active] [ref=ref_130]:\n  - generic [ref=ref_131]:\n    - generic [ref=ref_132]:\n      - link:\n        - /url: admin.htm\n        - img [ref=ref_133] [cursor=pointer]\n      - link \"ParaBank\":\n        - /url: index.htm\n        - img \"ParaBank\" [ref=ref_134] [cursor=pointer]\n      - paragraph [ref=ref_135]: Experience the difference\n    - generic [ref=ref_136]:\n      - list [ref=ref_137]:\n        - listitem [ref=ref_138]: Solutions\n        - listitem [ref=ref_139]:\n          - link \"About Us\" [ref=ref_140] [cursor=pointer]:\n            - /url: about.htm\n        - listitem [ref=ref_141]:\n          - link \"Services\" [ref=ref_142] [cursor=pointer]:\n            - /url: services.htm\n        - listitem [ref=ref_143]:\n          - link \"Products\" [ref=ref_144] [cursor=pointer]:\n            - /url: http://www.parasoft.com/jsp/products.jsp\n        - listitem [ref=ref_145]:\n          - link \"Locations\" [ref=ref_146] [cursor=pointer]:\n            - /url: http://www.parasoft.com/jsp/pr/contacts.jsp\n        - listitem [ref=ref_147]:\n          - link \"Admin Page\" [ref=ref_148] [cursor=pointer]:\n            - /url: admin.htm\n      - list [ref=ref_149]:\n        - listitem [ref=ref_150]:\n          - link \"home\" [ref=ref_151] [cursor=pointer]:\n            - /url: index.htm\n        - listitem [ref=ref_152]:\n          - link \"about\" [ref=ref_153] [cursor=pointer]:\n            - /url: about.htm\n        - listitem [ref=ref_154]:\n          - link \"contact\" [ref=ref_155] [cursor=pointer]:\n            - /url: contact.htm\n    - generic [ref=ref_156]:\n      - generic [ref=ref_157]:\n        - paragraph [ref=ref_158]: [masked]\n        - heading \"Account Services\" [level=2] [ref=ref_159]\n        - list [ref=ref_160]:\n          - listitem [ref=ref_161]:\n            - link \"Open New Account\" [ref=ref_162] [cursor=pointer]:\n              - /url: openaccount.htm\n          - listitem [ref=ref_163]:\n            - link \"Accounts Overview\" [ref=ref_164] [cursor=pointer]:\n              - /url: overview.htm\n          - listitem [ref=ref_165]:\n            - link \"Transfer Funds\" [ref=ref_166] [cursor=pointer]:\n              - /url: transfer.htm\n          - listitem [ref=ref_167]:\n            - link \"Bill Pay\" [ref=ref_168] [cursor=pointer]:\n              - /url: billpay.htm\n          - listitem [ref=ref_169]:\n            - link \"Find Transactions\" [ref=ref_170] [cursor=pointer]:\n              - /url: findtrans.htm\n          - listitem [ref=ref_171]:\n            - link \"Update Contact Info\" [ref=ref_172] [cursor=pointer]:\n              - /url: updateprofile.htm\n          - listitem [ref=ref_173]:\n            - link \"Request Loan\" [ref=ref_174] [cursor=pointer]:\n              - /url: requestloan.htm\n          - listitem [ref=ref_175]:\n            - link \"Log Out\" [ref=ref_176] [cursor=pointer]:\n              - /url: logout.htm\n      - generic [ref=ref_177]:\n        - heading \"Open New Account\" [level=1] [ref=ref_178]\n        - generic [ref=ref_179]:\n          - paragraph [ref=ref_180]: What type of Account would you like to open?\n          - combobox [ref=ref_181]:\n            - option \"CHECKING\"\n            - option \"SAVINGS\" [selected]\n          - paragraph [ref=ref_182]: A minimum of $250.00 must be deposited into this account at time of opening. Please choose an existing account to transfer funds into the new account.\n          - combobox [ref=ref_183]:\n            - option \"[masked]\" [selected]\n            - option \"[masked]\"\n            - option \"[masked]\"\n            - option \"[masked]\"\n            - option \"[masked]\"\n            - option \"[masked]\"\n            - option \"[masked]\"\n            - option \"[masked]\"\n            - option \"[masked]\"\n          - button \"Open New Account\" [ref=ref_184] [cursor=pointer]\n  - generic [ref=ref_185]:\n    - list [ref=ref_186]:\n      - listitem [ref=ref_187]:\n        - link \"Home\" [ref=ref_188] [cursor=pointer]:\n          - /url: index.htm\n        - text: \"|\"\n      - listitem [ref=ref_189]:\n        - link \"About Us\" [ref=ref_190] [cursor=pointer]:\n          - /url: about.htm\n        - text: \"|\"\n      - listitem [ref=ref_191]:\n        - link \"Services\" [ref=ref_192] [cursor=pointer]:\n          - /url: services.htm\n        - text: \"|\"\n      - listitem [ref=ref_193]:\n        - link \"Products\" [ref=ref_194] [cursor=pointer]:\n          - /url: http://www.parasoft.com/jsp/products.jsp\n        - text: \"|\"\n      - listitem [ref=ref_195]:\n        - link \"Locations\" [ref=ref_196] [cursor=pointer]:\n          - /url: http://www.parasoft.com/jsp/pr/contacts.jsp\n        - text: \"|\"\n      - listitem [ref=ref_197]:\n        - link \"Site Map\" [ref=ref_198] [cursor=pointer]:\n          - /url: sitemap.htm\n        - text: \"|\"\n      - listitem [ref=ref_199]:\n        - link \"Contact Us\" [ref=ref_200] [cursor=pointer]:\n          - /url: contact.htm\n    - paragraph [ref=ref_201]: © Parasoft. All rights reserved.\n    - list [ref=ref_202]:\n      - listitem [ref=ref_203]: \"Visit us at:\"\n      - listitem [ref=ref_204]:\n        - link \"www.parasoft.com\" [ref=ref_205] [cursor=pointer]:\n          - /url: http://www.parasoft.com/",
+        "status": 200,
+        "title": "ParaBank | Open Account",
+        "url": "https://parabank.parasoft.com/parabank/openaccount.htm"
+      },
+      "approved": false,
+      "before": {
+        "route": "/openaccount.htm",
+        "snapshot": "- generic [active] [ref=ref_130]:\n  - generic [ref=ref_131]:\n    - generic [ref=ref_132]:\n      - link:\n        - /url: admin.htm\n        - img [ref=ref_133] [cursor=pointer]\n      - link \"ParaBank\":\n        - /url: index.htm\n        - img \"ParaBank\" [ref=ref_134] [cursor=pointer]\n      - paragraph [ref=ref_135]: Experience the difference\n    - generic [ref=ref_136]:\n      - list [ref=ref_137]:\n        - listitem [ref=ref_138]: Solutions\n        - listitem [ref=ref_139]:\n          - link \"About Us\" [ref=ref_140] [cursor=pointer]:\n            - /url: about.htm\n        - listitem [ref=ref_141]:\n          - link \"Services\" [ref=ref_142] [cursor=pointer]:\n            - /url: services.htm\n        - listitem [ref=ref_143]:\n          - link \"Products\" [ref=ref_144] [cursor=pointer]:\n            - /url: http://www.parasoft.com/jsp/products.jsp\n        - listitem [ref=ref_145]:\n          - link \"Locations\" [ref=ref_146] [cursor=pointer]:\n            - /url: http://www.parasoft.com/jsp/pr/contacts.jsp\n        - listitem [ref=ref_147]:\n          - link \"Admin Page\" [ref=ref_148] [cursor=pointer]:\n            - /url: admin.htm\n      - list [ref=ref_149]:\n        - listitem [ref=ref_150]:\n          - link \"home\" [ref=ref_151] [cursor=pointer]:\n            - /url: index.htm\n        - listitem [ref=ref_152]:\n          - link \"about\" [ref=ref_153] [cursor=pointer]:\n            - /url: about.htm\n        - listitem [ref=ref_154]:\n          - link \"contact\" [ref=ref_155] [cursor=pointer]:\n            - /url: contact.htm\n    - generic [ref=ref_156]:\n      - generic [ref=ref_157]:\n        - paragraph [ref=ref_158]: [masked]\n        - heading \"Account Services\" [level=2] [ref=ref_159]\n        - list [ref=ref_160]:\n          - listitem [ref=ref_161]:\n            - link \"Open New Account\" [ref=ref_162] [cursor=pointer]:\n              - /url: openaccount.htm\n          - listitem [ref=ref_163]:\n            - link \"Accounts Overview\" [ref=ref_164] [cursor=pointer]:\n              - /url: overview.htm\n          - listitem [ref=ref_165]:\n            - link \"Transfer Funds\" [ref=ref_166] [cursor=pointer]:\n              - /url: transfer.htm\n          - listitem [ref=ref_167]:\n            - link \"Bill Pay\" [ref=ref_168] [cursor=pointer]:\n              - /url: billpay.htm\n          - listitem [ref=ref_169]:\n            - link \"Find Transactions\" [ref=ref_170] [cursor=pointer]:\n              - /url: findtrans.htm\n          - listitem [ref=ref_171]:\n            - link \"Update Contact Info\" [ref=ref_172] [cursor=pointer]:\n              - /url: updateprofile.htm\n          - listitem [ref=ref_173]:\n            - link \"Request Loan\" [ref=ref_174] [cursor=pointer]:\n              - /url: requestloan.htm\n          - listitem [ref=ref_175]:\n            - link \"Log Out\" [ref=ref_176] [cursor=pointer]:\n              - /url: logout.htm\n      - generic [ref=ref_177]:\n        - heading \"Open New Account\" [level=1] [ref=ref_178]\n        - generic [ref=ref_179]:\n          - paragraph [ref=ref_180]: What type of Account would you like to open?\n          - combobox [ref=ref_181]:\n            - option \"CHECKING\"\n            - option \"SAVINGS\" [selected]\n          - paragraph [ref=ref_182]: A minimum of $250.00 must be deposited into this account at time of opening. Please choose an existing account to transfer funds into the new account.\n          - combobox [ref=ref_183]:\n            - option \"[masked]\" [selected]\n            - option \"[masked]\"\n            - option \"[masked]\"\n            - option \"[masked]\"\n            - option \"[masked]\"\n            - option \"[masked]\"\n            - option \"[masked]\"\n            - option \"[masked]\"\n            - option \"[masked]\"\n          - button \"Open New Account\" [ref=ref_184] [cursor=pointer]\n  - generic [ref=ref_185]:\n    - list [ref=ref_186]:\n      - listitem [ref=ref_187]:\n        - link \"Home\" [ref=ref_188] [cursor=pointer]:\n          - /url: index.htm\n        - text: \"|\"\n      - listitem [ref=ref_189]:\n        - link \"About Us\" [ref=ref_190] [cursor=pointer]:\n          - /url: about.htm\n        - text: \"|\"\n      - listitem [ref=ref_191]:\n        - link \"Services\" [ref=ref_192] [cursor=pointer]:\n          - /url: services.htm\n        - text: \"|\"\n      - listitem [ref=ref_193]:\n        - link \"Products\" [ref=ref_194] [cursor=pointer]:\n          - /url: http://www.parasoft.com/jsp/products.jsp\n        - text: \"|\"\n      - listitem [ref=ref_195]:\n        - link \"Locations\" [ref=ref_196] [cursor=pointer]:\n          - /url: http://www.parasoft.com/jsp/pr/contacts.jsp\n        - text: \"|\"\n      - listitem [ref=ref_197]:\n        - link \"Site Map\" [ref=ref_198] [cursor=pointer]:\n          - /url: sitemap.htm\n        - text: \"|\"\n      - listitem [ref=ref_199]:\n        - link \"Contact Us\" [ref=ref_200] [cursor=pointer]:\n          - /url: contact.htm\n    - paragraph [ref=ref_201]: © Parasoft. All rights reserved.\n    - list [ref=ref_202]:\n      - listitem [ref=ref_203]: \"Visit us at:\"\n      - listitem [ref=ref_204]:\n        - link \"www.parasoft.com\" [ref=ref_205] [cursor=pointer]:\n          - /url: http://www.parasoft.com/",
+        "status": 200,
+        "title": "ParaBank | Open Account",
+        "url": "https://parabank.parasoft.com/parabank/openaccount.htm"
+      },
+      "dispatched": false,
+      "duration_ms": 349,
+      "effect": "input",
+      "element": {
+        "description": "combobox 'A minimum of $250.00 must be deposited into this…'",
+        "input_type": null,
+        "name": null,
+        "rejected": [],
+        "role": "combobox",
+        "selected": [
+          "••••4",
+          "••••4"
+        ],
+        "sensitivity": "public",
+        "tag": "select",
+        "target": {
+          "description": "combobox 'A minimum of $250.00 must be deposited into this…'",
+          "fingerprint": {
+            "input_type": null,
+            "label": null,
+            "name": null,
+            "role": "combobox",
+            "tag": "select"
+          },
+          "frame_path": [],
+          "locators": [
+            {
+              "by": "css",
+              "note": "A hand-written id (it does not look generated). It survives restyling, not a rewrite of the page.",
+              "stability": "medium",
+              "templated": false,
+              "value": "select#fromAccountId",
+              "verified": {
+                "run_id": "discovery-20261022T121643Z-lgyxrz",
+                "same_element": true,
+                "unique": true
+              }
+            },
+            {
+              "by": "xpath",
+              "note": "Anchored on the text placed beside the control, because the page gives it no <label> or accessible name. It moves if that text is reworded.",
+              "stability": "low",
+              "templated": false,
+              "value": "//p[starts-with(normalize-space(.), 'A minimum of $250.00 must be deposited into this account at')]/following-sibling::select[1]",
+              "verified": {
+                "run_id": "discovery-20261022T121643Z-lgyxrz",
+                "same_element": true,
+                "unique": true
+              }
+            },
+            {
+              "by": "css",
+              "note": "Position in the DOM below the nearest stable id. Any layout change breaks it; last resort.",
+              "stability": "low",
+              "templated": false,
+              "value": "#openAccountForm > form:nth-of-type(1) > select:nth-of-type(2)",
+              "verified": {
+                "run_id": "discovery-20261022T121643Z-lgyxrz",
+                "same_element": true,
+                "unique": true
+              }
+            }
+          ],
+          "scope": null
+        }
+      },
+      "error": null,
+      "key": null,
+      "member": "form_input",
+      "observed_after": null,
+      "ok": true,
+      "rationale": null,
+      "seq": 3,
+      "turn": 4,
+      "url": null,
+      "value": {
+        "literal": null,
+        "param": "funding_account_id",
+        "sensitivity": "financial_id"
+      }
+    },
+    {
+      "actor": "agent",
+      "after": {
+        "route": "/openaccount.htm",
+        "snapshot": "- generic [active] [ref=ref_130]:\n  - generic [ref=ref_131]:\n    - generic [ref=ref_132]:\n      - link:\n        - /url: admin.htm\n        - img [ref=ref_133] [cursor=pointer]\n      - link \"ParaBank\":\n        - /url: index.htm\n        - img \"ParaBank\" [ref=ref_134] [cursor=pointer]\n      - paragraph [ref=ref_135]: Experience the difference\n    - generic [ref=ref_136]:\n      - list [ref=ref_137]:\n        - listitem [ref=ref_138]: Solutions\n        - listitem [ref=ref_139]:\n          - link \"About Us\" [ref=ref_140] [cursor=pointer]:\n            - /url: about.htm\n        - listitem [ref=ref_141]:\n          - link \"Services\" [ref=ref_142] [cursor=pointer]:\n            - /url: services.htm\n        - listitem [ref=ref_143]:\n          - link \"Products\" [ref=ref_144] [cursor=pointer]:\n            - /url: http://www.parasoft.com/jsp/products.jsp\n        - listitem [ref=ref_145]:\n          - link \"Locations\" [ref=ref_146] [cursor=pointer]:\n            - /url: http://www.parasoft.com/jsp/pr/contacts.jsp\n        - listitem [ref=ref_147]:\n          - link \"Admin Page\" [ref=ref_148] [cursor=pointer]:\n            - /url: admin.htm\n      - list [ref=ref_149]:\n        - listitem [ref=ref_150]:\n          - link \"home\" [ref=ref_151] [cursor=pointer]:\n            - /url: index.htm\n        - listitem [ref=ref_152]:\n          - link \"about\" [ref=ref_153] [cursor=pointer]:\n            - /url: about.htm\n        - listitem [ref=ref_154]:\n          - link \"contact\" [ref=ref_155] [cursor=pointer]:\n            - /url: contact.htm\n    - generic [ref=ref_156]:\n      - generic [ref=ref_157]:\n        - paragraph [ref=ref_158]: [masked]\n        - heading \"Account Services\" [level=2] [ref=ref_159]\n        - list [ref=ref_160]:\n          - listitem [ref=ref_161]:\n            - link \"Open New Account\" [ref=ref_162] [cursor=pointer]:\n              - /url: openaccount.htm\n          - listitem [ref=ref_163]:\n            - link \"Accounts Overview\" [ref=ref_164] [cursor=pointer]:\n              - /url: overview.htm\n          - listitem [ref=ref_165]:\n            - link \"Transfer Funds\" [ref=ref_166] [cursor=pointer]:\n              - /url: transfer.htm\n          - listitem [ref=ref_167]:\n            - link \"Bill Pay\" [ref=ref_168] [cursor=pointer]:\n              - /url: billpay.htm\n          - listitem [ref=ref_169]:\n            - link \"Find Transactions\" [ref=ref_170] [cursor=pointer]:\n              - /url: findtrans.htm\n          - listitem [ref=ref_171]:\n            - link \"Update Contact Info\" [ref=ref_172] [cursor=pointer]:\n              - /url: updateprofile.htm\n          - listitem [ref=ref_173]:\n            - link \"Request Loan\" [ref=ref_174] [cursor=pointer]:\n              - /url: requestloan.htm\n          - listitem [ref=ref_175]:\n            - link \"Log Out\" [ref=ref_176] [cursor=pointer]:\n              - /url: logout.htm\n      - generic [ref=ref_206]:\n        - heading \"Account Opened!\" [level=1] [ref=ref_207]\n        - paragraph [ref=ref_208]: Congratulations, your account is now open.\n        - paragraph [ref=ref_209]:\n          - text: \"Your new account number:\"\n          - link \"[masked]\" [ref=ref_210] [cursor=pointer]:\n            - /url: activity.htm?id=••••4\n  - generic [ref=ref_185]:\n    - list [ref=ref_186]:\n      - listitem [ref=ref_187]:\n        - link \"Home\" [ref=ref_188] [cursor=pointer]:\n          - /url: index.htm\n        - text: \"|\"\n      - listitem [ref=ref_189]:\n        - link \"About Us\" [ref=ref_190] [cursor=pointer]:\n          - /url: about.htm\n        - text: \"|\"\n      - listitem [ref=ref_191]:\n        - link \"Services\" [ref=ref_192] [cursor=pointer]:\n          - /url: services.htm\n        - text: \"|\"\n      - listitem [ref=ref_193]:\n        - link \"Products\" [ref=ref_194] [cursor=pointer]:\n          - /url: http://www.parasoft.com/jsp/products.jsp\n        - text: \"|\"\n      - listitem [ref=ref_195]:\n        - link \"Locations\" [ref=ref_196] [cursor=pointer]:\n          - /url: http://www.parasoft.com/jsp/pr/contacts.jsp\n        - text: \"|\"\n      - listitem [ref=ref_197]:\n        - link \"Site Map\" [ref=ref_198] [cursor=pointer]:\n          - /url: sitemap.htm\n        - text: \"|\"\n      - listitem [ref=ref_199]:\n        - link \"Contact Us\" [ref=ref_200] [cursor=pointer]:\n          - /url: contact.htm\n    - paragraph [ref=ref_201]: © Parasoft. All rights reserved.\n    - list [ref=ref_202]:\n      - listitem [ref=ref_203]: \"Visit us at:\"\n      - listitem [ref=ref_204]:\n        - link \"www.parasoft.com\" [ref=ref_205] [cursor=pointer]:\n          - /url: http://www.parasoft.com/",
+        "status": 200,
+        "title": "ParaBank | Open Account",
+        "url": "https://parabank.parasoft.com/parabank/openaccount.htm"
+      },
+      "approved": true,
+      "before": {
+        "route": "/openaccount.htm",
+        "snapshot": "- generic [active] [ref=ref_130]:\n  - generic [ref=ref_131]:\n    - generic [ref=ref_132]:\n      - link:\n        - /url: admin.htm\n        - img [ref=ref_133] [cursor=pointer]\n      - link \"ParaBank\":\n        - /url: index.htm\n        - img \"ParaBank\" [ref=ref_134] [cursor=pointer]\n      - paragraph [ref=ref_135]: Experience the difference\n    - generic [ref=ref_136]:\n      - list [ref=ref_137]:\n        - listitem [ref=ref_138]: Solutions\n        - listitem [ref=ref_139]:\n          - link \"About Us\" [ref=ref_140] [cursor=pointer]:\n            - /url: about.htm\n        - listitem [ref=ref_141]:\n          - link \"Services\" [ref=ref_142] [cursor=pointer]:\n            - /url: services.htm\n        - listitem [ref=ref_143]:\n          - link \"Products\" [ref=ref_144] [cursor=pointer]:\n            - /url: http://www.parasoft.com/jsp/products.jsp\n        - listitem [ref=ref_145]:\n          - link \"Locations\" [ref=ref_146] [cursor=pointer]:\n            - /url: http://www.parasoft.com/jsp/pr/contacts.jsp\n        - listitem [ref=ref_147]:\n          - link \"Admin Page\" [ref=ref_148] [cursor=pointer]:\n            - /url: admin.htm\n      - list [ref=ref_149]:\n        - listitem [ref=ref_150]:\n          - link \"home\" [ref=ref_151] [cursor=pointer]:\n            - /url: index.htm\n        - listitem [ref=ref_152]:\n          - link \"about\" [ref=ref_153] [cursor=pointer]:\n            - /url: about.htm\n        - listitem [ref=ref_154]:\n          - link \"contact\" [ref=ref_155] [cursor=pointer]:\n            - /url: contact.htm\n    - generic [ref=ref_156]:\n      - generic [ref=ref_157]:\n        - paragraph [ref=ref_158]: [masked]\n        - heading \"Account Services\" [level=2] [ref=ref_159]\n        - list [ref=ref_160]:\n          - listitem [ref=ref_161]:\n            - link \"Open New Account\" [ref=ref_162] [cursor=pointer]:\n              - /url: openaccount.htm\n          - listitem [ref=ref_163]:\n            - link \"Accounts Overview\" [ref=ref_164] [cursor=pointer]:\n              - /url: overview.htm\n          - listitem [ref=ref_165]:\n            - link \"Transfer Funds\" [ref=ref_166] [cursor=pointer]:\n              - /url: transfer.htm\n          - listitem [ref=ref_167]:\n            - link \"Bill Pay\" [ref=ref_168] [cursor=pointer]:\n              - /url: billpay.htm\n          - listitem [ref=ref_169]:\n            - link \"Find Transactions\" [ref=ref_170] [cursor=pointer]:\n              - /url: findtrans.htm\n          - listitem [ref=ref_171]:\n            - link \"Update Contact Info\" [ref=ref_172] [cursor=pointer]:\n              - /url: updateprofile.htm\n          - listitem [ref=ref_173]:\n            - link \"Request Loan\" [ref=ref_174] [cursor=pointer]:\n              - /url: requestloan.htm\n          - listitem [ref=ref_175]:\n            - link \"Log Out\" [ref=ref_176] [cursor=pointer]:\n              - /url: logout.htm\n      - generic [ref=ref_177]:\n        - heading \"Open New Account\" [level=1] [ref=ref_178]\n        - generic [ref=ref_179]:\n          - paragraph [ref=ref_180]: What type of Account would you like to open?\n          - combobox [ref=ref_181]:\n            - option \"CHECKING\"\n            - option \"SAVINGS\" [selected]\n          - paragraph [ref=ref_182]: A minimum of $250.00 must be deposited into this account at time of opening. Please choose an existing account to transfer funds into the new account.\n          - combobox [ref=ref_183]:\n            - option \"[masked]\" [selected]\n            - option \"[masked]\"\n            - option \"[masked]\"\n            - option \"[masked]\"\n            - option \"[masked]\"\n            - option \"[masked]\"\n            - option \"[masked]\"\n            - option \"[masked]\"\n            - option \"[masked]\"\n          - button \"Open New Account\" [ref=ref_184] [cursor=pointer]\n  - generic [ref=ref_185]:\n    - list [ref=ref_186]:\n      - listitem [ref=ref_187]:\n        - link \"Home\" [ref=ref_188] [cursor=pointer]:\n          - /url: index.htm\n        - text: \"|\"\n      - listitem [ref=ref_189]:\n        - link \"About Us\" [ref=ref_190] [cursor=pointer]:\n          - /url: about.htm\n        - text: \"|\"\n      - listitem [ref=ref_191]:\n        - link \"Services\" [ref=ref_192] [cursor=pointer]:\n          - /url: services.htm\n        - text: \"|\"\n      - listitem [ref=ref_193]:\n        - link \"Products\" [ref=ref_194] [cursor=pointer]:\n          - /url: http://www.parasoft.com/jsp/products.jsp\n        - text: \"|\"\n      - listitem [ref=ref_195]:\n        - link \"Locations\" [ref=ref_196] [cursor=pointer]:\n          - /url: http://www.parasoft.com/jsp/pr/contacts.jsp\n        - text: \"|\"\n      - listitem [ref=ref_197]:\n        - link \"Site Map\" [ref=ref_198] [cursor=pointer]:\n          - /url: sitemap.htm\n        - text: \"|\"\n      - listitem [ref=ref_199]:\n        - link \"Contact Us\" [ref=ref_200] [cursor=pointer]:\n          - /url: contact.htm\n    - paragraph [ref=ref_201]: © Parasoft. All rights reserved.\n    - list [ref=ref_202]:\n      - listitem [ref=ref_203]: \"Visit us at:\"\n      - listitem [ref=ref_204]:\n        - link \"www.parasoft.com\" [ref=ref_205] [cursor=pointer]:\n          - /url: http://www.parasoft.com/",
+        "status": 200,
+        "title": "ParaBank | Open Account",
+        "url": "https://parabank.parasoft.com/parabank/openaccount.htm"
+      },
+      "dispatched": false,
+      "duration_ms": 585,
+      "effect": "commit",
+      "element": {
+        "description": "button 'Open New Account'",
+        "input_type": "button",
+        "name": "Open New Account",
+        "rejected": [],
+        "role": "button",
+        "selected": null,
+        "sensitivity": "public",
+        "tag": "input",
+        "target": {
+          "description": "button 'Open New Account'",
+          "fingerprint": {
+            "input_type": "button",
+            "label": null,
+            "name": "Open New Account",
+            "role": "button",
+            "tag": "input"
+          },
+          "frame_path": [],
+          "locators": [
+            {
+              "by": "role",
+              "note": "Role and accessible name, as a user perceives the element. It survives markup changes and moves with the label text.",
+              "stability": "high",
+              "templated": false,
+              "value": {
+                "exact": true,
+                "name": "Open New Account",
+                "role": "button"
+              },
+              "verified": {
+                "run_id": "discovery-20261022T121643Z-lgyxrz",
+                "same_element": true,
+                "unique": true
+              }
+            },
+            {
+              "by": "css",
+              "note": "The value attribute is the button's label; it moves with it.",
+              "stability": "medium",
+              "templated": false,
+              "value": "input[type='button'][value='Open New Account']",
+              "verified": {
+                "run_id": "discovery-20261022T121643Z-lgyxrz",
+                "same_element": true,
+                "unique": true
+              }
+            },
+            {
+              "by": "css",
+              "note": "Position in the DOM below the nearest stable id. Any layout change breaks it; last resort.",
+              "stability": "low",
+              "templated": false,
+              "value": "#openAccountForm > form:nth-of-type(1) > div:nth-of-type(1) > input:nth-of-type(1)",
+              "verified": {
+                "run_id": "discovery-20261022T121643Z-lgyxrz",
+                "same_element": true,
+                "unique": true
+              }
+            }
+          ],
+          "scope": null
+        }
+      },
+      "error": null,
+      "key": null,
+      "member": "left_click",
+      "observed_after": {
+        "route": "/openaccount.htm",
+        "snapshot": "- generic [active] [ref=ref_130]:\n  - generic [ref=ref_131]:\n    - generic [ref=ref_132]:\n      - link:\n        - /url: admin.htm\n        - img [ref=ref_133] [cursor=pointer]\n      - link \"ParaBank\":\n        - /url: index.htm\n        - img \"ParaBank\" [ref=ref_134] [cursor=pointer]\n      - paragraph [ref=ref_135]: Experience the difference\n    - generic [ref=ref_136]:\n      - list [ref=ref_137]:\n        - listitem [ref=ref_138]: Solutions\n        - listitem [ref=ref_139]:\n          - link \"About Us\" [ref=ref_140] [cursor=pointer]:\n            - /url: about.htm\n        - listitem [ref=ref_141]:\n          - link \"Services\" [ref=ref_142] [cursor=pointer]:\n            - /url: services.htm\n        - listitem [ref=ref_143]:\n          - link \"Products\" [ref=ref_144] [cursor=pointer]:\n            - /url: http://www.parasoft.com/jsp/products.jsp\n        - listitem [ref=ref_145]:\n          - link \"Locations\" [ref=ref_146] [cursor=pointer]:\n            - /url: http://www.parasoft.com/jsp/pr/contacts.jsp\n        - listitem [ref=ref_147]:\n          - link \"Admin Page\" [ref=ref_148] [cursor=pointer]:\n            - /url: admin.htm\n      - list [ref=ref_149]:\n        - listitem [ref=ref_150]:\n          - link \"home\" [ref=ref_151] [cursor=pointer]:\n            - /url: index.htm\n        - listitem [ref=ref_152]:\n          - link \"about\" [ref=ref_153] [cursor=pointer]:\n            - /url: about.htm\n        - listitem [ref=ref_154]:\n          - link \"contact\" [ref=ref_155] [cursor=pointer]:\n            - /url: contact.htm\n    - generic [ref=ref_156]:\n      - generic [ref=ref_157]:\n        - paragraph [ref=ref_158]: [masked]\n        - heading \"Account Services\" [level=2] [ref=ref_159]\n        - list [ref=ref_160]:\n          - listitem [ref=ref_161]:\n            - link \"Open New Account\" [ref=ref_162] [cursor=pointer]:\n              - /url: openaccount.htm\n          - listitem [ref=ref_163]:\n            - link \"Accounts Overview\" [ref=ref_164] [cursor=pointer]:\n              - /url: overview.htm\n          - listitem [ref=ref_165]:\n            - link \"Transfer Funds\" [ref=ref_166] [cursor=pointer]:\n              - /url: transfer.htm\n          - listitem [ref=ref_167]:\n            - link \"Bill Pay\" [ref=ref_168] [cursor=pointer]:\n              - /url: billpay.htm\n          - listitem [ref=ref_169]:\n            - link \"Find Transactions\" [ref=ref_170] [cursor=pointer]:\n              - /url: findtrans.htm\n          - listitem [ref=ref_171]:\n            - link \"Update Contact Info\" [ref=ref_172] [cursor=pointer]:\n              - /url: updateprofile.htm\n          - listitem [ref=ref_173]:\n            - link \"Request Loan\" [ref=ref_174] [cursor=pointer]:\n              - /url: requestloan.htm\n          - listitem [ref=ref_175]:\n            - link \"Log Out\" [ref=ref_176] [cursor=pointer]:\n              - /url: logout.htm\n      - generic [ref=ref_206]:\n        - heading \"Account Opened!\" [level=1] [ref=ref_207]\n        - paragraph [ref=ref_208]: Congratulations, your account is now open.\n        - paragraph [ref=ref_209]:\n          - text: \"Your new account number:\"\n          - link \"[masked]\" [ref=ref_210] [cursor=pointer]:\n            - /url: activity.htm?id=••••4\n  - generic [ref=ref_185]:\n    - list [ref=ref_186]:\n      - listitem [ref=ref_187]:\n        - link \"Home\" [ref=ref_188] [cursor=pointer]:\n          - /url: index.htm\n        - text: \"|\"\n      - listitem [ref=ref_189]:\n        - link \"About Us\" [ref=ref_190] [cursor=pointer]:\n          - /url: about.htm\n        - text: \"|\"\n      - listitem [ref=ref_191]:\n        - link \"Services\" [ref=ref_192] [cursor=pointer]:\n          - /url: services.htm\n        - text: \"|\"\n      - listitem [ref=ref_193]:\n        - link \"Products\" [ref=ref_194] [cursor=pointer]:\n          - /url: http://www.parasoft.com/jsp/products.jsp\n        - text: \"|\"\n      - listitem [ref=ref_195]:\n        - link \"Locations\" [ref=ref_196] [cursor=pointer]:\n          - /url: http://www.parasoft.com/jsp/pr/contacts.jsp\n        - text: \"|\"\n      - listitem [ref=ref_197]:\n        - link \"Site Map\" [ref=ref_198] [cursor=pointer]:\n          - /url: sitemap.htm\n        - text: \"|\"\n      - listitem [ref=ref_199]:\n        - link \"Contact Us\" [ref=ref_200] [cursor=pointer]:\n          - /url: contact.htm\n    - paragraph [ref=ref_201]: © Parasoft. All rights reserved.\n    - list [ref=ref_202]:\n      - listitem [ref=ref_203]: \"Visit us at:\"\n      - listitem [ref=ref_204]:\n        - link \"www.parasoft.com\" [ref=ref_205] [cursor=pointer]:\n          - /url: http://www.parasoft.com/",
+        "status": 200,
+        "title": "ParaBank | Open Account",
+        "url": "https://parabank.parasoft.com/parabank/openaccount.htm"
+      },
+      "ok": true,
+      "rationale": null,
+      "seq": 4,
+      "turn": 5,
+      "url": null,
+      "value": null
+    }
+  ],
+  "capability": "parabank.open_account",
+  "goal": "Open a new SAVINGS account, funded from account ••••4.",
+  "outputs": [
+    {
+      "after_seq": 4,
+      "description": "New account number link shown on Account Opened confirmation",
+      "element": {
+        "description": "the element showing new_account_id",
+        "input_type": null,
+        "name": null,
+        "rejected": [
+          [
+            "role",
+            "contains the value it shows, which changes every run"
+          ],
+          [
+            "text",
+            "contains the value it shows, which changes every run"
+          ]
+        ],
+        "role": "link",
+        "selected": null,
+        "sensitivity": "public",
+        "tag": "a",
+        "target": {
+          "description": "the element showing new_account_id",
+          "fingerprint": {
+            "input_type": null,
+            "label": null,
+            "name": null,
+            "role": "link",
+            "tag": "a"
+          },
+          "frame_path": [],
+          "locators": [
+            {
+              "by": "css",
+              "note": "A hand-written id (it does not look generated). It survives restyling, not a rewrite of the page.",
+              "stability": "medium",
+              "templated": false,
+              "value": "a#newAccountId",
+              "verified": {
+                "run_id": "discovery-20261022T121643Z-lgyxrz",
+                "same_element": true,
+                "unique": true
+              }
+            },
+            {
+              "by": "css",
+              "note": "Position in the DOM below the nearest stable id. Any layout change breaks it; last resort.",
+              "stability": "low",
+              "templated": false,
+              "value": "#openAccountResult > p:nth-of-type(2) > a:nth-of-type(1)",
+              "verified": {
+                "run_id": "discovery-20261022T121643Z-lgyxrz",
+                "same_element": true,
+                "unique": true
+              }
+            }
+          ],
+          "scope": null
+        }
+      },
+      "name": "new_account_id",
+      "sample": "••••4"
+    }
+  ],
+  "params": {
+    "account_type": "SAVINGS",
+    "funding_account_id": "••••4"
+  },
+  "run_id": "discovery-20261022T121643Z-lgyxrz",
+  "start": {
+    "route": "/overview.htm",
+    "snapshot": "- generic [active] [ref=ref_1]:\n  - generic [ref=ref_2]:\n    - generic [ref=ref_3]:\n      - link:\n        - /url: admin.htm\n        - img [ref=ref_4] [cursor=pointer]\n      - link \"ParaBank\":\n        - /url: index.htm\n        - img \"ParaBank\" [ref=ref_5] [cursor=pointer]\n      - paragraph [ref=ref_6]: Experience the difference\n    - generic [ref=ref_7]:\n      - list [ref=ref_8]:\n        - listitem [ref=ref_9]: Solutions\n        - listitem [ref=ref_10]:\n          - link \"About Us\" [ref=ref_11] [cursor=pointer]:\n            - /url: about.htm\n        - listitem [ref=ref_12]:\n          - link \"Services\" [ref=ref_13] [cursor=pointer]:\n            - /url: services.htm\n        - listitem [ref=ref_14]:\n          - link \"Products\" [ref=ref_15] [cursor=pointer]:\n            - /url: http://www.parasoft.com/jsp/products.jsp\n        - listitem [ref=ref_16]:\n          - link \"Locations\" [ref=ref_17] [cursor=pointer]:\n            - /url: http://www.parasoft.com/jsp/pr/contacts.jsp\n        - listitem [ref=ref_18]:\n          - link \"Admin Page\" [ref=ref_19] [cursor=pointer]:\n            - /url: admin.htm\n      - list [ref=ref_20]:\n        - listitem [ref=ref_21]:\n          - link \"home\" [ref=ref_22] [cursor=pointer]:\n            - /url: index.htm\n        - listitem [ref=ref_23]:\n          - link \"about\" [ref=ref_24] [cursor=pointer]:\n            - /url: about.htm\n        - listitem [ref=ref_25]:\n          - link \"contact\" [ref=ref_26] [cursor=pointer]:\n            - /url: contact.htm\n    - generic [ref=ref_27]:\n      - generic [ref=ref_28]:\n        - paragraph [ref=ref_29]: [masked]\n        - heading \"Account Services\" [level=2] [ref=ref_30]\n        - list [ref=ref_31]:\n          - listitem [ref=ref_32]:\n            - link \"Open New Account\" [ref=ref_33] [cursor=pointer]:\n              - /url: openaccount.htm\n          - listitem [ref=ref_34]:\n            - link \"Accounts Overview\" [ref=ref_35] [cursor=pointer]:\n              - /url: overview.htm\n          - listitem [ref=ref_36]:\n            - link \"Transfer Funds\" [ref=ref_37] [cursor=pointer]:\n              - /url: transfer.htm\n          - listitem [ref=ref_38]:\n            - link \"Bill Pay\" [ref=ref_39] [cursor=pointer]:\n              - /url: billpay.htm\n          - listitem [ref=ref_40]:\n            - link \"Find Transactions\" [ref=ref_41] [cursor=pointer]:\n              - /url: findtrans.htm\n          - listitem [ref=ref_42]:\n            - link \"Update Contact Info\" [ref=ref_43] [cursor=pointer]:\n              - /url: updateprofile.htm\n          - listitem [ref=ref_44]:\n            - link \"Request Loan\" [ref=ref_45] [cursor=pointer]:\n              - /url: requestloan.htm\n          - listitem [ref=ref_46]:\n            - link \"Log Out\" [ref=ref_47] [cursor=pointer]:\n              - /url: logout.htm\n      - generic [ref=ref_48]:\n        - heading \"Accounts Overview\" [level=1] [ref=ref_49]\n        - table [ref=ref_50]:\n          - rowgroup [ref=ref_51]:\n            - row [ref=ref_52]:\n              - columnheader \"[masked]\" [ref=ref_53]\n              - columnheader \"[masked]\" [ref=ref_54]\n              - columnheader \"[masked]\" [ref=ref_55]\n          - rowgroup [ref=ref_56]:\n            - row [ref=ref_57]:\n              - cell [ref=ref_58]:\n                - link \"[masked]\" [ref=ref_59] [cursor=pointer]:\n                  - /url: activity.htm?id=••••4\n              - cell \"[masked]\" [ref=ref_60]\n              - cell \"[masked]\" [ref=ref_61]\n            - row [ref=ref_62]:\n              - cell [ref=ref_63]:\n                - link \"[masked]\" [ref=ref_64] [cursor=pointer]:\n                  - /url: activity.htm?id=••••9\n              - cell \"[masked]\" [ref=ref_65]\n              - cell \"[masked]\" [ref=ref_66]\n            - row [ref=ref_67]:\n              - cell [ref=ref_68]:\n                - link \"[masked]\" [ref=ref_69] [cursor=pointer]:\n                  - /url: activity.htm?id=••••6\n              - cell \"[masked]\" [ref=ref_70]\n              - cell \"[masked]\" [ref=ref_71]\n            - row [ref=ref_72]:\n              - cell [ref=ref_73]:\n                - link \"[masked]\" [ref=ref_74] [cursor=pointer]:\n                  - /url: activity.htm?id=••••0\n              - cell \"[masked]\" [ref=ref_75]\n              - cell \"[masked]\" [ref=ref_76]\n            - row [ref=ref_77]:\n              - cell [ref=ref_78]:\n                - link \"[masked]\" [ref=ref_79] [cursor=pointer]:\n                  - /url: activity.htm?id=••••9\n              - cell \"[masked]\" [ref=ref_80]\n              - cell \"[masked]\" [ref=ref_81]\n            - row [ref=ref_82]:\n              - cell [ref=ref_83]:\n                - link \"[masked]\" [ref=ref_84] [cursor=pointer]:\n                  - /url: activity.htm?id=••••7\n              - cell \"[masked]\" [ref=ref_85]\n              - cell \"[masked]\" [ref=ref_86]\n            - row [ref=ref_87]:\n              - cell [ref=ref_88]:\n                - link \"[masked]\" [ref=ref_89] [cursor=pointer]:\n                  - /url: activity.htm?id=••••8\n              - cell \"[masked]\" [ref=ref_90]\n              - cell \"[masked]\" [ref=ref_91]\n            - row [ref=ref_92]:\n              - cell [ref=ref_93]:\n                - link \"[masked]\" [ref=ref_94] [cursor=pointer]:\n                  - /url: activity.htm?id=••••2\n              - cell \"[masked]\" [ref=ref_95]\n              - cell \"[masked]\" [ref=ref_96]\n            - row [ref=ref_97]:\n              - cell [ref=ref_98]:\n                - link \"[masked]\" [ref=ref_99] [cursor=pointer]:\n                  - /url: activity.htm?id=••••8\n              - cell \"[masked]\" [ref=ref_100]\n              - cell \"[masked]\" [ref=ref_101]\n            - row [ref=ref_102]:\n              - cell \"[masked]\" [ref=ref_103]\n              - cell \"[masked]\" [ref=ref_104]\n              - cell [ref=ref_105]\n          - rowgroup [ref=ref_106]:\n            - row [ref=ref_107]:\n              - cell \"[masked]\" [ref=ref_108]\n  - generic [ref=ref_109]:\n    - list [ref=ref_110]:\n      - listitem [ref=ref_111]:\n        - link \"Home\" [ref=ref_112] [cursor=pointer]:\n          - /url: index.htm\n        - text: \"|\"\n      - listitem [ref=ref_113]:\n        - link \"About Us\" [ref=ref_114] [cursor=pointer]:\n          - /url: about.htm\n        - text: \"|\"\n      - listitem [ref=ref_115]:\n        - link \"Services\" [ref=ref_116] [cursor=pointer]:\n          - /url: services.htm\n        - text: \"|\"\n      - listitem [ref=ref_117]:\n        - link \"Products\" [ref=ref_118] [cursor=pointer]:\n          - /url: http://www.parasoft.com/jsp/products.jsp\n        - text: \"|\"\n      - listitem [ref=ref_119]:\n        - link \"Locations\" [ref=ref_120] [cursor=pointer]:\n          - /url: http://www.parasoft.com/jsp/pr/contacts.jsp\n        - text: \"|\"\n      - listitem [ref=ref_121]:\n        - link \"Site Map\" [ref=ref_122] [cursor=pointer]:\n          - /url: sitemap.htm\n        - text: \"|\"\n      - listitem [ref=ref_123]:\n        - link \"Contact Us\" [ref=ref_124] [cursor=pointer]:\n          - /url: contact.htm\n    - paragraph [ref=ref_125]: © Parasoft. All rights reserved.\n    - list [ref=ref_126]:\n      - listitem [ref=ref_127]: \"Visit us at:\"\n      - listitem [ref=ref_128]:\n        - link \"www.parasoft.com\" [ref=ref_129] [cursor=pointer]:\n          - /url: http://www.parasoft.com/",
+    "status": 200,
+    "title": "ParaBank | Accounts Overview",
+    "url": "https://parabank.parasoft.com/parabank/overview.htm"
+  },
+  "success": {
+    "evidence": [
+      {
+        "description": "heading 'Account Opened!'",
+        "input_type": null,
+        "name": "Account Opened!",
+        "rejected": [],
+        "role": "heading",
+        "selected": null,
+        "sensitivity": "public",
+        "tag": "h1",
+        "target": {
+          "description": "heading 'Account Opened!'",
+          "fingerprint": {
+            "input_type": null,
+            "label": null,
+            "name": "Account Opened!",
+            "role": "heading",
+            "tag": "h1"
+          },
+          "frame_path": [],
+          "locators": [
+            {
+              "by": "role",
+              "note": "Role and accessible name, as a user perceives the element. It survives markup changes and moves with the label text.",
+              "stability": "high",
+              "templated": false,
+              "value": {
+                "exact": true,
+                "name": "Account Opened!",
+                "role": "heading"
+              },
+              "verified": {
+                "run_id": "discovery-20261022T121643Z-lgyxrz",
+                "same_element": true,
+                "unique": true
+              }
+            },
+            {
+              "by": "text",
+              "note": "Exact visible text; moves with copy changes.",
+              "stability": "medium",
+              "templated": false,
+              "value": "Account Opened!",
+              "verified": {
+                "run_id": "discovery-20261022T121643Z-lgyxrz",
+                "same_element": true,
+                "unique": true
+              }
+            },
+            {
+              "by": "css",
+              "note": "Position in the DOM below the nearest stable id. Any layout change breaks it; last resort.",
+              "stability": "low",
+              "templated": false,
+              "value": "#openAccountResult > h1:nth-of-type(1)",
+              "verified": {
+                "run_id": "discovery-20261022T121643Z-lgyxrz",
+                "same_element": true,
+                "unique": true
+              }
+            }
+          ],
+          "scope": null
+        }
+      },
+      {
+        "description": "paragraph",
+        "input_type": null,
+        "name": null,
+        "rejected": [],
+        "role": "paragraph",
+        "selected": null,
+        "sensitivity": "public",
+        "tag": "p",
+        "target": {
+          "description": "paragraph",
+          "fingerprint": {
+            "input_type": null,
+            "label": null,
+            "name": null,
+            "role": "paragraph",
+            "tag": "p"
+          },
+          "frame_path": [],
+          "locators": [
+            {
+              "by": "text",
+              "note": "Exact visible text; moves with copy changes.",
+              "stability": "medium",
+              "templated": false,
+              "value": "Congratulations, your account is now open.",
+              "verified": {
+                "run_id": "discovery-20261022T121643Z-lgyxrz",
+                "same_element": true,
+                "unique": true
+              }
+            },
+            {
+              "by": "css",
+              "note": "Position in the DOM below the nearest stable id. Any layout change breaks it; last resort.",
+              "stability": "low",
+              "templated": false,
+              "value": "#openAccountResult > p:nth-of-type(1)",
+              "verified": {
+                "run_id": "discovery-20261022T121643Z-lgyxrz",
+                "same_element": true,
+                "unique": true
+              }
+            }
+          ],
+          "scope": null
+        }
+      },
+      {
+        "description": "link '••••4'",
+        "input_type": null,
+        "name": "••••4",
+        "rejected": [],
+        "role": "link",
+        "selected": null,
+        "sensitivity": "public",
+        "tag": "a",
+        "target": {
+          "description": "link '••••4'",
+          "fingerprint": {
+            "input_type": null,
+            "label": null,
+            "name": "••••4",
+            "role": "link",
+            "tag": "a"
+          },
+          "frame_path": [],
+          "locators": [
+            {
+              "by": "role",
+              "note": "Role and accessible name, as a user perceives the element. It survives markup changes and moves with the label text. The name looks like data, so it is only as stable as that value.",
+              "stability": "medium",
+              "templated": false,
+              "value": {
+                "exact": true,
+                "name": "••••4",
+                "role": "link"
+              },
+              "verified": {
+                "run_id": "discovery-20261022T121643Z-lgyxrz",
+                "same_element": true,
+                "unique": true
+              }
+            },
+            {
+              "by": "css",
+              "note": "A hand-written id (it does not look generated). It survives restyling, not a rewrite of the page.",
+              "stability": "medium",
+              "templated": false,
+              "value": "a#newAccountId",
+              "verified": {
+                "run_id": "discovery-20261022T121643Z-lgyxrz",
+                "same_element": true,
+                "unique": true
+              }
+            },
+            {
+              "by": "text",
+              "note": "Exact visible text; moves with copy changes.",
+              "stability": "low",
+              "templated": false,
+              "value": "••••4",
+              "verified": {
+                "run_id": "discovery-20261022T121643Z-lgyxrz",
+                "same_element": true,
+                "unique": true
+              }
+            },
+            {
+              "by": "css",
+              "note": "Position in the DOM below the nearest stable id. Any layout change breaks it; last resort.",
+              "stability": "low",
+              "templated": false,
+              "value": "#openAccountResult > p:nth-of-type(2) > a:nth-of-type(1)",
+              "verified": {
+                "run_id": "discovery-20261022T121643Z-lgyxrz",
+                "same_element": true,
+                "unique": true
+              }
+            }
+          ],
+          "scope": null
+        }
+      }
+    ],
+    "page": {
+      "route": "/openaccount.htm",
+      "snapshot": "- generic [active] [ref=ref_130]:\n  - generic [ref=ref_131]:\n    - generic [ref=ref_132]:\n      - link:\n        - /url: admin.htm\n        - img [ref=ref_133] [cursor=pointer]\n      - link \"ParaBank\":\n        - /url: index.htm\n        - img \"ParaBank\" [ref=ref_134] [cursor=pointer]\n      - paragraph [ref=ref_135]: Experience the difference\n    - generic [ref=ref_136]:\n      - list [ref=ref_137]:\n        - listitem [ref=ref_138]: Solutions\n        - listitem [ref=ref_139]:\n          - link \"About Us\" [ref=ref_140] [cursor=pointer]:\n            - /url: about.htm\n        - listitem [ref=ref_141]:\n          - link \"Services\" [ref=ref_142] [cursor=pointer]:\n            - /url: services.htm\n        - listitem [ref=ref_143]:\n          - link \"Products\" [ref=ref_144] [cursor=pointer]:\n            - /url: http://www.parasoft.com/jsp/products.jsp\n        - listitem [ref=ref_145]:\n          - link \"Locations\" [ref=ref_146] [cursor=pointer]:\n            - /url: http://www.parasoft.com/jsp/pr/contacts.jsp\n        - listitem [ref=ref_147]:\n          - link \"Admin Page\" [ref=ref_148] [cursor=pointer]:\n            - /url: admin.htm\n      - list [ref=ref_149]:\n        - listitem [ref=ref_150]:\n          - link \"home\" [ref=ref_151] [cursor=pointer]:\n            - /url: index.htm\n        - listitem [ref=ref_152]:\n          - link \"about\" [ref=ref_153] [cursor=pointer]:\n            - /url: about.htm\n        - listitem [ref=ref_154]:\n          - link \"contact\" [ref=ref_155] [cursor=pointer]:\n            - /url: contact.htm\n    - generic [ref=ref_156]:\n      - generic [ref=ref_157]:\n        - paragraph [ref=ref_158]: [masked]\n        - heading \"Account Services\" [level=2] [ref=ref_159]\n        - list [ref=ref_160]:\n          - listitem [ref=ref_161]:\n            - link \"Open New Account\" [ref=ref_162] [cursor=pointer]:\n              - /url: openaccount.htm\n          - listitem [ref=ref_163]:\n            - link \"Accounts Overview\" [ref=ref_164] [cursor=pointer]:\n              - /url: overview.htm\n          - listitem [ref=ref_165]:\n            - link \"Transfer Funds\" [ref=ref_166] [cursor=pointer]:\n              - /url: transfer.htm\n          - listitem [ref=ref_167]:\n            - link \"Bill Pay\" [ref=ref_168] [cursor=pointer]:\n              - /url: billpay.htm\n          - listitem [ref=ref_169]:\n            - link \"Find Transactions\" [ref=ref_170] [cursor=pointer]:\n              - /url: findtrans.htm\n          - listitem [ref=ref_171]:\n            - link \"Update Contact Info\" [ref=ref_172] [cursor=pointer]:\n              - /url: updateprofile.htm\n          - listitem [ref=ref_173]:\n            - link \"Request Loan\" [ref=ref_174] [cursor=pointer]:\n              - /url: requestloan.htm\n          - listitem [ref=ref_175]:\n            - link \"Log Out\" [ref=ref_176] [cursor=pointer]:\n              - /url: logout.htm\n      - generic [ref=ref_206]:\n        - heading \"Account Opened!\" [level=1] [ref=ref_207]\n        - paragraph [ref=ref_208]: Congratulations, your account is now open.\n        - paragraph [ref=ref_209]:\n          - text: \"Your new account number:\"\n          - link \"[masked]\" [ref=ref_210] [cursor=pointer]:\n            - /url: activity.htm?id=••••4\n  - generic [ref=ref_185]:\n    - list [ref=ref_186]:\n      - listitem [ref=ref_187]:\n        - link \"Home\" [ref=ref_188] [cursor=pointer]:\n          - /url: index.htm\n        - text: \"|\"\n      - listitem [ref=ref_189]:\n        - link \"About Us\" [ref=ref_190] [cursor=pointer]:\n          - /url: about.htm\n        - text: \"|\"\n      - listitem [ref=ref_191]:\n        - link \"Services\" [ref=ref_192] [cursor=pointer]:\n          - /url: services.htm\n        - text: \"|\"\n      - listitem [ref=ref_193]:\n        - link \"Products\" [ref=ref_194] [cursor=pointer]:\n          - /url: http://www.parasoft.com/jsp/products.jsp\n        - text: \"|\"\n      - listitem [ref=ref_195]:\n        - link \"Locations\" [ref=ref_196] [cursor=pointer]:\n          - /url: http://www.parasoft.com/jsp/pr/contacts.jsp\n        - text: \"|\"\n      - listitem [ref=ref_197]:\n        - link \"Site Map\" [ref=ref_198] [cursor=pointer]:\n          - /url: sitemap.htm\n        - text: \"|\"\n      - listitem [ref=ref_199]:\n        - link \"Contact Us\" [ref=ref_200] [cursor=pointer]:\n          - /url: contact.htm\n    - paragraph [ref=ref_201]: © Parasoft. All rights reserved.\n    - list [ref=ref_202]:\n      - listitem [ref=ref_203]: \"Visit us at:\"\n      - listitem [ref=ref_204]:\n        - link \"www.parasoft.com\" [ref=ref_205] [cursor=pointer]:\n          - /url: http://www.parasoft.com/",
+      "status": 200,
+      "title": "ParaBank | Open Account",
+      "url": "https://parabank.parasoft.com/parabank/openaccount.htm"
+    },
+    "summary": "Opened a new SAVINGS account (••••4) funded from account ••••4."
+  },
+  "tenant": "parabank-public"
+}
