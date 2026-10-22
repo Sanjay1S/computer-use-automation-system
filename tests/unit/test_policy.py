@@ -81,6 +81,12 @@ def test_a_policy_for_another_app_is_refused() -> None:
         "http://localhost:8089/parabank/",
         "http://localhost:8089/parabank",
         "http://LOCALHOST:8089/parabank/overview.htm",
+        "http://localhost:8089/parabank/login.htm",
+        "http://localhost:8089/parabank/services_proxy/bank/customers/12212/accounts",
+        "http://localhost:8089/parabank/services_proxy/bank/createAccount?customerId=1",
+        "http://localhost:8089/parabank/images/logo.gif",
+        "http://localhost:8089/parabank/webjars/jquery/4.0.0/jquery.min.js",
+        "http://localhost:8089/parabank/style.css",
         "about:blank",
     ],
 )
@@ -100,6 +106,14 @@ def test_allowed_urls(local: PolicyGate, url: str) -> None:
         ("http://localhost:8089/parabank/logout.htm", "routes.deny"),
         ("http://localhost:8089/parabank/services/bank/cleanDB", "routes.deny"),
         ("http://localhost:8089/parabank/services_proxy/bank/initializeDB", "routes.deny"),
+        # An allowlist, not allow-all: the rest of the app is out of scope until a
+        # capability needs it, even pages with nothing dangerous on them.
+        ("http://localhost:8089/parabank/transfer.htm", "routes.allow"),
+        ("http://localhost:8089/parabank/about.htm", "routes.allow"),
+        ("http://localhost:8089/parabank/activity.htm?id=13566", "routes.allow"),
+        ("http://localhost:8089/parabank/register.htm", "routes.allow"),
+        ("http://localhost:8089/parabank/services_proxy/bank/transfer", "routes.allow"),
+        ("http://localhost:8089/parabank/services/bank/customers/1/accounts", "routes.allow"),
         ("http://localhost:8089/other/index.htm", "routes.base_path"),
         ("http://localhost:8089/parabankx/index.htm", "routes.base_path"),
         ("http://localhost:8080/parabank/index.htm", "host"),

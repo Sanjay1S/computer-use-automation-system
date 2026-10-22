@@ -7,7 +7,7 @@ from collections.abc import Iterator
 import pytest
 from playwright.sync_api import BrowserContext, Page, Playwright
 
-from tests.conftest import PARABANK_POLICY, Loopback, sign_in
+from tests.conftest import Loopback, sign_in, surface_test_gate
 from tests.fixtures.site import BASE_URL, FixtureSite
 from understudy.artifact.signatures import VisibleCondition
 from understudy.policy.gate import PolicyGate
@@ -18,9 +18,15 @@ from understudy.tenant import TenantBinding
 ADMIN = "/parabank/admin.htm"
 
 
+@pytest.fixture
+def gate() -> PolicyGate:
+    """This module drives fixture-only pages, so it adds them to the allowlist."""
+    return surface_test_gate()
+
+
 def loopback_gate(server: Loopback) -> PolicyGate:
     tenant = TenantBinding(id="loop", vendor_app="parabank", base_url=server.base_url, sandbox=True)
-    return PolicyGate.load(PARABANK_POLICY, tenant)
+    return surface_test_gate(tenant)
 
 
 # --- the routed fixture ------------------------------------------------------------------

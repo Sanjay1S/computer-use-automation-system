@@ -4,7 +4,24 @@ vendor_app: parabank
 # Routes are relative to the tenant's base URL (http://localhost:8080/parabank,
 # https://parabank.parasoft.com/parabank, ...), so one policy serves every tenant.
 routes:
-  allow: ["/*"]
+  # An allowlist: exactly what the flows in scope (Open New Account, plus sign-in and
+  # session recovery) were seen to request on local ParaBank. Anything else is
+  # refused: a page load stops the run, a sub-request is aborted and logged. A new
+  # capability adds its routes here after recon, as with the commit routes below.
+  allow:
+    - / # the app root serves the sign-in page
+    - /index.htm
+    - /login.htm # the sign-in form posts here
+    - /overview.htm # where sign-in lands
+    - /openaccount.htm
+    - /services_proxy/bank/customers/*/accounts # the funding list (XHR)
+    - /services_proxy/bank/createAccount # the commit (XHR); also gated below
+    - /images/*
+    - /style.css
+    - /template.css
+    - /webjars/*
+  # Kept even though the allowlist already excludes them: a deny entry also stops a
+  # locator naming the route (L007), and survives a later loosening of the allowlist.
   deny:
     - /admin.htm # re-initialises the shared database
     - /initializeDB.htm

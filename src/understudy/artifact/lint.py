@@ -9,6 +9,7 @@ approval and must then block the artifact rather than let it run.
 from __future__ import annotations
 
 import re
+from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any, Literal
 
@@ -68,7 +69,14 @@ class PolicyView:
         return True
 
 
-def lint(capability: Capability, policy: PolicyView | None = None) -> LintReport:
+def lint(
+    capability: Capability,
+    policy: PolicyView | None = None,
+    run_values: Mapping[str, str] | None = None,
+) -> LintReport:
+    """`run_values` maps the values one run happened to use or read (a free-form
+    input, an output's sample) to what they were ("input funding_account_id").
+    Only the compiler knows them, so L012 runs there."""
     findings: list[Finding] = []
     findings += _l001_vacuous_success(capability)
     findings += _l002_sensitive_literals(capability)
@@ -80,6 +88,7 @@ def lint(capability: Capability, policy: PolicyView | None = None) -> LintReport
     findings += _l009_commit_approval(capability)
     findings += _l010_baked_in_url(capability)
     findings += _l011_outcome_refs(capability)
+    findings += _l012_run_values_in_text(capability, run_values or {})
     return LintReport(findings=findings)
 
 
@@ -457,6 +466,53 @@ def _l011_outcome_refs(capability: Capability) -> list[Finding]:
                     )
                 )
     return findings
+
+
+FREE_TEXT_KEYS = frozenset({"title", "description", "intent", "note"})
+
+
+def _l012_run_values_in_text(capability: Capability, values: Mapping[str, str]) -> list[Finding]:
+    """A value from the discovery run in a field people and agents read as the
+    contract: a sample account id in the success description would be shown to
+    every caller as if it were part of the capability, and it is customer data.
+    Values shorter than three characters are skipped: they match by accident. The
+    message names the value's source, never the value."""
+    patterns = [
+        (label, re.compile(rf"(?<![\w]){re.escape(value)}(?![\w])"))
+        for value, label in sorted(values.items())
+        if len(value) >= 3
+    ]
+    if not patterns:
+        return []
+    findings: list[Finding] = []
+    for where, text in _free_text(capability.model_dump(mode="json", by_alias=True), ""):
+        for label, pattern in patterns:
+            if pattern.search(text):
+                findings.append(
+                    Finding(
+                        "L012",
+                        "error",
+                        f"free text holds the discovery run's value of {label}; "
+                        "describe the capability, not one run of it",
+                        where,
+                    )
+                )
+    return findings
+
+
+def _free_text(node: Any, path: str) -> list[tuple[str, str]]:
+    if isinstance(node, dict):
+        found: list[tuple[str, str]] = []
+        for key, value in node.items():
+            where = f"{path}.{key}" if path else key
+            if key in FREE_TEXT_KEYS and isinstance(value, str):
+                found.append((where, value))
+            else:
+                found += _free_text(value, where)
+        return found
+    if isinstance(node, list):
+        return [pair for i, item in enumerate(node) for pair in _free_text(item, f"{path}[{i}]")]
+    return []
 
 
 def _has_host(value: str) -> bool:

@@ -376,6 +376,47 @@ def test_the_draft_contract_comes_from_the_goal() -> None:
     assert isinstance(capability.steps[1].value, ParamValue)
 
 
+def test_the_success_description_is_written_from_the_checkpoint_not_the_models_prose() -> None:
+    calls = Calls()
+    the_flow(calls)
+    run = trajectory(calls)
+    run = run.model_copy(
+        update={
+            "success": run.success.model_copy(  # type: ignore[union-attr]
+                update={"summary": "Opened SAVINGS 13566 from account 13344."}
+            )
+        }
+    )
+
+    result = compile_trajectory(run, GOAL, GATE, models_served=["claude-opus-5-5"])
+
+    description = result.capability.success.description
+    assert description == (
+        "The heading 'Account Opened!' is showing and the element 'a#newAccountId' is showing"
+    )
+    assert result.report.ok, [str(f) for f in result.report.findings]
+
+
+def test_a_run_value_that_reaches_free_text_fails_lint_but_an_enum_choice_does_not() -> None:
+    calls = Calls()
+    the_flow(calls)
+    funding = calls.items[2]
+    assert funding.element is not None and funding.element.target is not None
+    named = funding.element.target.model_copy(update={"description": "combobox holding 13344"})
+    calls.items[2] = funding.model_copy(
+        update={"element": funding.element.model_copy(update={"target": named})}
+    )
+
+    result = compiled(calls)
+
+    l012 = [f for f in result.report.findings if f.code == "L012"]
+    assert {f.where for f in l012} >= {"steps[2].intent", "steps[2].target.description"}
+    assert all("funding_account_id" in f.message for f in l012)
+    # SAVINGS was this run's account_type and the goal's description names it, but an
+    # enum choice is part of the contract, not run data.
+    assert "SAVINGS" in result.capability.description
+
+
 def test_a_key_press_on_the_page_itself_is_dropped_unless_it_commits() -> None:
     calls = Calls()
     the_flow(calls)

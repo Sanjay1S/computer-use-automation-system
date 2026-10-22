@@ -7,15 +7,22 @@ from typing import Any
 import pytest
 from playwright.sync_api import Page
 
-from tests.conftest import sign_in
+from tests.conftest import sign_in, surface_test_gate
 from tests.fixtures.example_capability import example_capability
 from tests.fixtures.site import BASE_URL, FixtureSite
 from understudy.artifact.lint import lint
 from understudy.artifact.schema import Fingerprint, Locator, Target, Verification
+from understudy.policy.gate import PolicyGate
 from understudy.surface.web import WebSurface
 
 SUBMIT = "input[type='button'][value='Open New Account']"
 VERIFIED = Verification(unique=True, same_element=True, run_id="t")
+
+
+@pytest.fixture
+def gate() -> PolicyGate:
+    """This module drives fixture-only pages, so it adds them to the allowlist."""
+    return surface_test_gate()
 
 
 def open_form(page: Page, surface: WebSurface) -> None:

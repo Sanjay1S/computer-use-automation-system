@@ -7,7 +7,7 @@ import re
 import pytest
 from playwright.sync_api import Page
 
-from tests.conftest import REPO, sign_in
+from tests.conftest import REPO, sign_in, surface_test_gate
 from tests.fixtures.example_capability import example_capability
 from tests.fixtures.site import BASE_URL, PASSWORD, FixtureSite
 from understudy.artifact.schema import Extraction
@@ -38,6 +38,12 @@ from understudy.surface.web import WebSurface
 
 CREATE = "/parabank/services_proxy/bank/createAccount"
 SUBMIT = "input[type='button'][value='Open New Account']"
+
+
+@pytest.fixture
+def gate() -> PolicyGate:
+    """This module drives fixture-only pages, so it adds them to the allowlist."""
+    return surface_test_gate()
 
 
 def ref_for(snapshot: str, contains: str) -> str:

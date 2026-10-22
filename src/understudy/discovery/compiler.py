@@ -10,11 +10,13 @@ The rules, in order:
 5. each step's checkpoint comes from what changed on the page after it, never from
    data-dependent text unless that text is a param;
 6. the success checkpoint comes from the model's evidence, minus anything that was
-   already true when the flow began, with a negative control;
+   already true when the flow began, with a negative control; its description is
+   written from the checkpoint, never from the model's prose;
 7. recorded outputs become extract steps;
 8. a select bound to a free-form param gets a `<param>_not_found` business outcome;
 9. effects, retries and the re-entry point follow the policy and the commit rule;
-10. lint runs, and its findings go to the review summary with the compiler's notes.
+10. lint runs, with this run's values so L012 can catch any that reached free text,
+   and its findings go to the review summary with the compiler's notes.
 
 A person's actions during a takeover compile like the model's and are listed in
 `provenance.human_steps`, which the review summary flags.
@@ -184,8 +186,21 @@ class _Compiler:
             )
         success = self._success(entry_state)
         capability = self._capability(success)
-        report = lint(capability, self.gate)
+        report = lint(capability, self.gate, run_values=self._run_values())
         return Compilation(capability, self.notes, report)
+
+    def _run_values(self) -> dict[str, str]:
+        """What this run happened to use or read, for L012. Enum values are left out:
+        a description naming the choices ("CHECKING or SAVINGS") is the contract."""
+        found: dict[str, str] = {}
+        for param in self.goal.params:
+            value = self.values.get(param.name)
+            if value and param.type != "enum":
+                found[value] = f"input {param.name}"
+        for output in self.t.outputs:
+            if output.sample:
+                found.setdefault(output.sample, f"output {output.name}")
+        return found
 
     # --- 1-2: which calls become steps ------------------------------------------------------
 
@@ -492,10 +507,12 @@ class _Compiler:
         landmark = _landmark(self.steps[0])
         negated = sig.NotCondition(not_=signature)
         control = sig.AllCondition(all=[landmark, negated]) if landmark else negated
+        # Written from the checkpoint, not taken from the model's summary: that is
+        # prose about one run and carried its sample ids into the contract.
         return Checkpoint(
             signature=signature,
             negative_control=control,
-            description=self.t.success.summary or "The flow's confirmation is showing",
+            description=_first_upper(" and ".join(_says(c) for c in conditions)),
         )
 
     # --- 9: the artifact -----------------------------------------------------------------------
@@ -665,6 +682,10 @@ def _says(condition: sig.Signature) -> str:
             return f"the {condition.role} {condition.name!r} is showing"
         if condition.text:
             return f"the text {condition.text!r} is showing"
+        if condition.css:
+            return f"the element {condition.css!r} is showing"
+    if isinstance(condition, sig.UrlCondition):
+        return "the page address is the one the flow ends on"
     return "the page shows the recorded change"
 
 

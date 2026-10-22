@@ -9,6 +9,7 @@ from playwright.sync_api import Browser, BrowserContext, Page, Playwright, sync_
 
 from tests.fixtures.site import BASE_URL, PASSWORD, USERNAME, FixtureSite
 from understudy.policy.gate import PolicyGate
+from understudy.policy.models import load_policy
 from understudy.surface.web import CONTEXT_OPTIONS, WebSurface
 from understudy.tenant import TenantBinding
 
@@ -53,6 +54,30 @@ def site(context: BrowserContext) -> FixtureSite:
 def gate() -> PolicyGate:
     """The real ParaBank policy, bound to the fixture origin."""
     return PolicyGate.load(PARABANK_POLICY, FIXTURE_TENANT)
+
+
+# Pages the surface tests drive that the open-account flow does not use (legacy
+# frames, slow and missing pages, redirect endpoints, the not-found page). ParaBank's
+# allowlist rightly refuses them.
+SURFACE_TEST_ROUTES = [
+    "/legacy/*",
+    "/slow.htm",
+    "/never.gif",
+    "/missing.htm",
+    "/hop-*",
+    "/landed",
+    "/activity.htm",  # ParaBank's not-found answer, which the flow itself never visits
+]
+
+
+def surface_test_gate(tenant: TenantBinding = FIXTURE_TENANT) -> PolicyGate:
+    """The ParaBank policy with SURFACE_TEST_ROUTES added to its allowlist, for the
+    surface tests only. Replay and discovery tests run under the real policy."""
+    policy = load_policy(PARABANK_POLICY)
+    routes = policy.routes.model_copy(
+        update={"allow": [*policy.routes.allow, *SURFACE_TEST_ROUTES]}
+    )
+    return PolicyGate(policy.model_copy(update={"routes": routes}), tenant)
 
 
 @pytest.fixture

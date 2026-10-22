@@ -280,6 +280,7 @@ class _Execution:
         )
         self.session = FormLogin(replayer.profile.login, replayer.tenant, replayer.credentials)
         self.surface: WebSurface | None = None
+        self._violations_logged = 0
         self.ledger = RecoveryLedger(self.cap.recovery)
         self.attempts: dict[str, int] = {}
         self.outputs: dict[str, Any] = {}
@@ -327,6 +328,7 @@ class _Execution:
             page = open_page()
             if self.chaos:
                 self.chaos.install(page)
+            self._violations_logged = 0
             self.surface = WebSurface(
                 page,
                 self.r.gate,
@@ -436,6 +438,7 @@ class _Execution:
             if verdict is None:
                 verdict = self._run(step)
         finally:
+            self._log_violations(step)
             waited_ms = int(((self.handoffs.waited_s if self.handoffs else 0.0) - waited) * 1000)
             elapsed = int((time.monotonic() - started) * 1000) - waited_ms
             self.timings.append(
@@ -1314,6 +1317,26 @@ class _Execution:
             self.surface.screenshot(
                 self.run_ctx.screenshot_path(label), extra_masks=self.r.profile.screenshot_masks
             )
+
+    def _log_violations(self, step: Step) -> None:
+        """Every request the guard refused during the step, as a `policy` event. A
+        refused sub-request (an image, an XHR) does not stop the run, so without this
+        a route missing from the allowlist would leave no trace."""
+        if self.surface is None:
+            return
+        violations = self.surface.violations
+        for violation in violations[self._violations_logged :]:
+            self._event(
+                "policy",
+                step_id=step.id,
+                url=violation.url,
+                ok=False,
+                error=violation.reason,
+                rule=violation.rule,
+                navigation=violation.navigation,
+                via=violation.via,
+            )
+        self._violations_logged = len(violations)
 
     def _event(self, kind: EventKind, *, actor: Actor = "engine", **fields: Any) -> None:
         self.run_ctx.event(kind, actor=actor, **fields)

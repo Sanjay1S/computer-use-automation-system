@@ -485,6 +485,12 @@ def test_a_click_that_leaves_the_allowlist_fails_on_policy(
     assert (result.failure.category, result.failure.code) == ("policy", "policy_blocked")
     assert result.failure.step_id == "s1b_admin"
     assert site.reached("/parabank/admin.htm") == 0
+    # The refused request is in the event log, not only in the failure.
+    refused = [e for e in replay.events() if e["kind"] == "policy" and e.get("step_id")]
+    assert [(e["step_id"], e["data"]["rule"], e["data"]["navigation"]) for e in refused] == [
+        ("s1b_admin", "routes.deny", True)
+    ]
+    assert refused[0]["url"].endswith("/admin.htm")
 
 
 def test_an_unreachable_host_is_an_infra_failure(replay: Replay, site: FixtureSite) -> None:

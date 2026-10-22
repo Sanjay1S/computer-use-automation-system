@@ -375,6 +375,40 @@ def test_l002_still_catches_a_real_secret_token() -> None:
         assert "L002" in _codes(capability), leaked
 
 
+RUN = {"13344": "input funding_account_id", "13566": "output new_account_id"}
+
+
+def test_l012_a_run_value_in_the_success_description() -> None:
+    capability = example_capability()
+    assert "L012" not in lint(capability, run_values=RUN).codes()
+
+    capability.success.description = "Opened account 13566 from 13344."
+    findings = [f for f in lint(capability, run_values=RUN).findings if f.code == "L012"]
+
+    assert {(f.where, f.severity) for f in findings} == {("success.description", "error")}
+    assert len(findings) == 2
+    assert all("13344" not in f.message and "13566" not in f.message for f in findings)
+
+
+def test_l012_looks_in_every_free_text_field() -> None:
+    capability = example_capability()
+    capability.steps[2].intent = "Choose 13344"
+    capability.steps[2].target.locators[0].note = "read 13566 here"  # type: ignore[union-attr]
+
+    wheres = {f.where for f in lint(capability, run_values=RUN).findings if f.code == "L012"}
+
+    assert wheres == {"steps[2].intent", "steps[2].target.locators[0].note"}
+
+
+def test_l012_needs_a_whole_value_and_is_off_without_run_values() -> None:
+    capability = example_capability()
+    capability.success.description = "Opened account 913344, not the funding one."
+
+    assert "L012" not in lint(capability, run_values=RUN).codes()  # 13344 inside 913344
+    capability.success.description = "Opened 13344."
+    assert "L012" not in lint(capability).codes()  # no run values: lint at load time
+
+
 def _scope_locator(value: str) -> Locator:
     return Locator(
         by="css",
