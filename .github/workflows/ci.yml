@@ -1,0 +1,30 @@
+# Offline checks on every push and pull request: lint, format, strict types, and the
+# test suite. No network, API key or Docker is needed: tests drive a routed fixture
+# site and a scripted fake model. Tests marked `live` are skipped by default.
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - name: Install dependencies (from uv.lock, Python from .python-version)
+        run: uv sync --frozen
+      - name: Install Chromium and its system libraries
+        run: uv run playwright install --with-deps chromium
+      - name: Lint, format and type checks
+        run: make check
+      - name: Tests
+        run: make test

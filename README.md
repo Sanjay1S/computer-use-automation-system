@@ -36,6 +36,8 @@ make check   # ruff, ruff format --check, mypy (strict, all of src/)
 make test    # 586 tests, about two minutes: no network, API key or Docker
 ```
 
+CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs both on every push and pull request.
+
 The suite drives a routed fake origin (`https://fixture.test`) that copies ParaBank's real DOM, plus a scripted fake model that exercises the whole chain (discover, compile, replay) offline. Tests marked `live` (`make test-live`) need the container, credentials and, for one of them, the API key; they are skipped by default.
 
 ## Demo path
